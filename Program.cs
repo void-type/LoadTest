@@ -59,11 +59,21 @@ chanceOf404Option.AddValidator(result =>
         var optionName = result.Option.Name;
         result.ErrorMessage = $"{optionName} must be greater than or equal to 0";
     }
+
+    if (result.GetValueForOption(chanceOf404Option) > 100)
+    {
+        var optionName = result.Option.Name;
+        result.ErrorMessage = $"{optionName} must be less than or equal to 100";
+    }
 });
 
 var slowOption = new Option<bool>(
     name: "--slow",
     description: "Add delay between requests");
+
+var verboseOption = new Option<bool>(
+    name: "--verbose",
+    description: "Show URLs being requested");
 
 var rootCommand = new RootCommand(description: "Simple website load tester")
 {
@@ -73,21 +83,23 @@ var rootCommand = new RootCommand(description: "Simple website load tester")
     secondsToRunOption,
     chanceOf404Option,
     slowOption,
+    verboseOption,
 };
 
 rootCommand.Name = "loadtest";
 
 rootCommand.SetHandler(
-    async (string mode, string targetList, int threadCount, int secondsToRun, int chanceOf404, bool isSlowEnabled) =>
+    async (string mode, string targetList, int threadCount, int secondsToRun, int chanceOf404, bool isSlowEnabled, bool isVerbose) =>
     {
-        await LoadTestHelpers.RunLoadTest(mode, targetList, threadCount, secondsToRun, chanceOf404, isSlowEnabled);
+        await LoadTestHelpers.RunLoadTest(mode, targetList, threadCount, secondsToRun, chanceOf404, isSlowEnabled, isVerbose);
     },
     modeOption,
     targetListOption,
     threadCountOption,
     secondsToRunOption,
     chanceOf404Option,
-    slowOption
+    slowOption,
+    verboseOption
 );
 
 return await rootCommand.InvokeAsync(args);

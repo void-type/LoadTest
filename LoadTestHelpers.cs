@@ -5,7 +5,7 @@ namespace LoadTest;
 
 public static class LoadTestHelpers
 {
-    public static async Task RunLoadTest(string mode, string targetList, int threadCount, int secondsToRun, int chanceOf404, bool isSlowEnabled)
+    public static async Task RunLoadTest(string mode, string targetList, int threadCount, int secondsToRun, int chanceOf404, bool isSlowEnabled, bool isVerbose)
     {
         var urls = mode switch
         {
@@ -24,6 +24,7 @@ public static class LoadTestHelpers
             SecondsToRun = secondsToRun,
             ChanceOf404 = chanceOf404,
             IsSlowEnabled = isSlowEnabled,
+            IsVerbose = isVerbose,
         };
 
         metrics.Stopwatch.Start();
@@ -97,16 +98,18 @@ public static class LoadTestHelpers
 
             if (metrics.ChanceOf404 > 0)
             {
-                var roll = RandomNumberGenerator.GetInt32(0, 100);
-
-                if (roll < metrics.ChanceOf404)
+                if (metrics.ChanceOf404 >= 100 || RandomNumberGenerator.GetInt32(0, 100) < metrics.ChanceOf404)
                 {
                     Interlocked.Increment(ref metrics.IntendedMissedRequestCount);
                     appendedUrl = Guid.NewGuid().ToString();
                 }
             }
 
-            Console.WriteLine(urls[urlIndex] + appendedUrl);
+            if (metrics.IsVerbose)
+            {
+                Console.WriteLine(urls[urlIndex] + appendedUrl);
+            }
+
             var response = await client.GetAsync(urls[urlIndex] + appendedUrl);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)

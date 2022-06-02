@@ -12,4 +12,5 @@ public class Metrics
     public int ChanceOf404 { get; init; }
     public Stopwatch Stopwatch { get; } = new();
     public bool IsSlowEnabled { get; init; }
+    public bool IsVerbose { get; internal set; }
 }
