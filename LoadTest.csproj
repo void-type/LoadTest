@@ -9,6 +9,10 @@
 
   <ItemGroup>
     <!-- <PackageReference Include="spectre.console" Version="0.44.0" /> -->
+    <PackageReference Include="nerdbank.gitversioning" Version="3.5.107">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="system.commandline" Version="2.0.0-beta3.22114.1" />
   </ItemGroup>
 

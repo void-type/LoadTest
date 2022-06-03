@@ -2,7 +2,6 @@
 using LoadTest;
 
 // TODO: spectre output?
-// TODO: git versioning and build
 
 var modeOption = new Option<string>(
     name: "--mode",
