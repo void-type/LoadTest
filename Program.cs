@@ -10,7 +10,7 @@ var modeOption = new Option<string>(
 {
     IsRequired = true,
 }
-    .FromAmong("sitemap-url", "sitemap-file", "url-list-file");
+    .FromAmong("sitemap", "url-list");
 
 var targetListOption = new Option<string>(
     name: "--target-list",
@@ -91,7 +91,18 @@ rootCommand.Name = "loadtest";
 rootCommand.SetHandler(
     async (string mode, string targetList, int threadCount, int secondsToRun, int chanceOf404, bool isSlowEnabled, bool isVerbose) =>
     {
-        await LoadTestHelpers.RunLoadTest(mode, targetList, threadCount, secondsToRun, chanceOf404, isSlowEnabled, isVerbose);
+        var options = new LoadTesterOptions
+        {
+            Mode = mode,
+            TargetList = targetList,
+            ThreadCount = threadCount,
+            SecondsToRun = secondsToRun,
+            ChanceOf404 = chanceOf404,
+            IsSlowEnabled = isSlowEnabled,
+            IsVerbose = isVerbose,
+        };
+
+        await LoadTester.RunLoadTest(options);
     },
     modeOption,
     targetListOption,
