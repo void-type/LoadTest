@@ -2,7 +2,7 @@ namespace LoadTest;
 
 public class LoadTesterOptions
 {
-    public string Mode { get; init; } = string.Empty;
+    public LoadTesterMode Mode { get; init; }
     public string TargetList { get; init; } = string.Empty;
     public int ThreadCount { get; init; }
     public int SecondsToRun { get; init; }

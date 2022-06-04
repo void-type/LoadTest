@@ -10,8 +10,8 @@ public static class LoadTester
     {
         var urls = options.Mode switch
         {
-            "sitemap" => await GetUrlsFromSitemapUrl(options.TargetList, options),
-            "url-list" => await GetUrlsFromUrlListFile(options.TargetList),
+            LoadTesterMode.Sitemap => await GetUrlsFromSitemapUrl(options.TargetList, options),
+            LoadTesterMode.UrlList => await GetUrlsFromUrlListFile(options.TargetList),
             _ => throw new ArgumentException("Mode is not valid."),
         };
 

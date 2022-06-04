@@ -3,52 +3,55 @@ using LoadTest;
 
 // TODO: spectre output?
 
-var modeOption = new Option<string>(
+var modeOption = new Option<LoadTesterMode>(
     name: "--mode",
-    description: "Choose a run mode")
+    description: "Target list type")
 {
     IsRequired = true,
-}
-    .FromAmong("sitemap", "url-list");
+};
 
 var targetListOption = new Option<string>(
     name: "--target-list",
-    description: "Location of the target list, dependent on the mode.")
+    description: "Target list path (dependent on the mode)")
 {
     IsRequired = true
 };
 
 var threadCountOption = new Option<int>(
     name: "--threads",
-    description: "Number of threads to run",
-    getDefaultValue: () => 2);
+    description: "Number of concurrent threads to make requests",
+    getDefaultValue: () => 2)
+{
+};
 
 threadCountOption.AddValidator(result =>
 {
     if (result.GetValueForOption(threadCountOption) < 1)
     {
-        var optionName = result.Option.Name;
-        result.ErrorMessage = $"{optionName} must be greater than 0";
-    }
+    var optionName = result.Option.Name;
+    result.ErrorMessage = $"{optionName} must be greater than 0.";
+}
 });
 
 var secondsToRunOption = new Option<int>(
     name: "--seconds",
     description: "Number of seconds to run before stopping",
-    getDefaultValue: () => 5);
+    getDefaultValue: () => 5)
+{
+};
 
 secondsToRunOption.AddValidator(result =>
 {
     if (result.GetValueForOption(secondsToRunOption) < 1)
     {
         var optionName = result.Option.Name;
-        result.ErrorMessage = $"{optionName} must be greater than 0";
+        result.ErrorMessage = $"{optionName} must be greater than 0.";
     }
 });
 
 var chanceOf404Option = new Option<int>(
     name: "--chance-404",
-    description: "Percent chance of an intentional page miss.",
+    description: "Percent chance of an intentional page miss",
     getDefaultValue: () => 0);
 
 chanceOf404Option.AddValidator(result =>
@@ -56,13 +59,13 @@ chanceOf404Option.AddValidator(result =>
     if (result.GetValueForOption(chanceOf404Option) < 0)
     {
         var optionName = result.Option.Name;
-        result.ErrorMessage = $"{optionName} must be greater than or equal to 0";
+        result.ErrorMessage = $"{optionName} must be greater than or equal to 0.";
     }
 
     if (result.GetValueForOption(chanceOf404Option) > 100)
     {
         var optionName = result.Option.Name;
-        result.ErrorMessage = $"{optionName} must be less than or equal to 100";
+        result.ErrorMessage = $"{optionName} must be less than or equal to 100.";
     }
 });
 
@@ -72,9 +75,15 @@ var slowOption = new Option<bool>(
 
 var verboseOption = new Option<bool>(
     name: "--verbose",
-    description: "Show URLs being requested");
+    description: "Show more logging");
 
-var rootCommand = new RootCommand(description: "Simple website load tester")
+var rootCommand = new RootCommand(
+    description:
+@"Simple website load tester.
+
+Modes to get URL to test against:
+  * Sitemap - a Sitemap.xml hosted on the webserver. Retrieved over https.
+  * UrlList - a file with one URL per line. Retrieved via file protocols.")
 {
     modeOption,
     targetListOption,
@@ -88,7 +97,7 @@ var rootCommand = new RootCommand(description: "Simple website load tester")
 rootCommand.Name = "loadtest";
 
 rootCommand.SetHandler(
-    async (string mode, string targetList, int threadCount, int secondsToRun, int chanceOf404, bool isSlowEnabled, bool isVerbose) =>
+    async (LoadTesterMode mode, string targetList, int threadCount, int secondsToRun, int chanceOf404, bool isSlowEnabled, bool isVerbose) =>
     {
         var options = new LoadTesterOptions
         {
