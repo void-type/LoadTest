@@ -1,7 +1,8 @@
-# $siteMapUrl = "https://localhost:5001/sitemaps/sitemap.xml"
-# [xml]$siteMap = (Invoke-WebRequest -Uri $siteMapUrl -UseBasicParsing).Content
+$siteMapUrl = "https://localhost:5001/sitemaps/sitemap.xml"
+[xml]$siteMap = (Invoke-WebRequest -Uri $siteMapUrl -UseBasicParsing).Content
 
-[xml]$siteMap = Get-Content -Path ./sitemap.ball.xml -Raw
+# Or if you have a copy of the xml
+# [xml]$siteMap = Get-Content -Path ./sitemap.ball.xml -Raw
 
 [string[]]$urls = @()
 

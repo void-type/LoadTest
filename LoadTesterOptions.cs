@@ -9,4 +9,6 @@ public class LoadTesterOptions
     public int ChanceOf404 { get; init; }
     public bool IsSlowEnabled { get; init; }
     public bool IsVerbose { get; init; }
+    public bool IsAllOnce { get; init; }
+    public string? MakeUrlList { get; init; }
 }

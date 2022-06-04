@@ -28,9 +28,9 @@ threadCountOption.AddValidator(result =>
 {
     if (result.GetValueForOption(threadCountOption) < 1)
     {
-    var optionName = result.Option.Name;
-    result.ErrorMessage = $"{optionName} must be greater than 0.";
-}
+        var optionName = result.Option.Name;
+        result.ErrorMessage = $"{optionName} must be greater than 0.";
+    }
 });
 
 var secondsToRunOption = new Option<int>(
@@ -73,6 +73,14 @@ var slowOption = new Option<bool>(
     name: "--slow",
     description: "Add delay between requests");
 
+var allOnceOption = new Option<bool>(
+    name: "--all-once",
+    description: "Request each URL once. Ignores --seconds. Good for 404 checking.");
+
+var makeUrlListOption = new Option<string>(
+    name: "--make-list",
+    description: "Instead of running tests, reads the target list and outputs it to a local file. Useful to speed up repeated runs with slow sitemap retrieval.");
+
 var verboseOption = new Option<bool>(
     name: "--verbose",
     description: "Show more logging");
@@ -82,7 +90,7 @@ var rootCommand = new RootCommand(
 @"Simple website load tester.
 
 Modes to get URL to test against:
-  * Sitemap - a Sitemap.xml hosted on the webserver. Retrieved over https.
+  * Sitemap - a Sitemap.xml hosted on a web server. Any sitemap indexes will be crawled recursively. Retrieved over https.
   * UrlList - a file with one URL per line. Retrieved via file protocols.")
 {
     modeOption,
@@ -92,12 +100,23 @@ Modes to get URL to test against:
     chanceOf404Option,
     slowOption,
     verboseOption,
+    allOnceOption,
+    makeUrlListOption,
 };
 
 rootCommand.Name = "loadtest";
 
 rootCommand.SetHandler(
-    async (LoadTesterMode mode, string targetList, int threadCount, int secondsToRun, int chanceOf404, bool isSlowEnabled, bool isVerbose) =>
+    async (
+        LoadTesterMode mode,
+         string targetList,
+        int threadCount,
+        int secondsToRun,
+        int chanceOf404,
+        bool isSlowEnabled,
+        bool isVerbose,
+        bool isAllOnce,
+        string makeUrlList) =>
     {
         var options = new LoadTesterOptions
         {
@@ -108,6 +127,8 @@ rootCommand.SetHandler(
             ChanceOf404 = chanceOf404,
             IsSlowEnabled = isSlowEnabled,
             IsVerbose = isVerbose,
+            IsAllOnce = isAllOnce,
+            MakeUrlList = makeUrlList,
         };
 
         await LoadTester.RunLoadTest(options);
@@ -118,7 +139,9 @@ rootCommand.SetHandler(
     secondsToRunOption,
     chanceOf404Option,
     slowOption,
-    verboseOption
+    verboseOption,
+    allOnceOption,
+    makeUrlListOption
 );
 
 return await rootCommand.InvokeAsync(args);

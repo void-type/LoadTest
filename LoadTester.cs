@@ -20,16 +20,25 @@ public static class LoadTester
             throw new InvalidOperationException("No URLs found. Exiting.");
         }
 
+        if (!string.IsNullOrWhiteSpace(options.MakeUrlList))
+        {
+            Console.WriteLine($"Writing URLs to {options.MakeUrlList}.");
+            await File.WriteAllLinesAsync(options.MakeUrlList, urls);
+            return;
+        }
+
         Console.WriteLine($"Running load test. Press Ctrl+C to stop.\n");
 
         var metrics = new Metrics();
         metrics.Stopwatch.Start();
 
+        var urlBlockSize = Convert.ToInt32(Math.Floor((double)urls.Length / options.ThreadCount));
+
         try
         {
             var tasks = Enumerable
                 .Range(0, options.ThreadCount)
-                .Select(i => StartThread(i, urls, metrics, options))
+                .Select(i => StartThread(i, urls, metrics, options, urlBlockSize))
                 .ToArray();
 
             Task.WaitAll(tasks);
@@ -63,9 +72,10 @@ public static class LoadTester
             var xml = XElement.Parse(xmlString);
             var urls = new List<string>();
 
-            var urlset = xml.DescendantsAndSelf().FirstOrDefault(x => x.Name.LocalName == "urlset");
+            var urlSet = xml.DescendantsAndSelf()
+                .FirstOrDefault(x => x.Name.LocalName == "urlset");
 
-            if (urlset is not null)
+            if (urlSet is not null)
             {
                 var locs = xml.Descendants()
                     .Where(x => x.Name.LocalName == "loc")
@@ -120,15 +130,23 @@ public static class LoadTester
 
     private static async Task<string[]> GetUrlsFromUrlListFile(string targetList)
     {
-        return await File.ReadAllLinesAsync(targetList);
+        return (await File.ReadAllLinesAsync(targetList))
+            .Distinct()
+            .ToArray();
     }
 
-    private static async Task StartThread(int threadNumber, string[] urls, Metrics metrics, LoadTesterOptions options)
+    private static async Task StartThread(int threadNumber, string[] urls, Metrics metrics, LoadTesterOptions options, int urlBlockSize)
     {
         using var client = new HttpClient();
 
+        // Thread number is zero-based
+        var initialUrlIndex = urlBlockSize * threadNumber;
+
+        // If the last thread, then go to the last URL, else go to the end of this block.
+        var stopUrlIndex = threadNumber == options.ThreadCount ? urls.Length - 1 : urlBlockSize * (threadNumber + 1) - 1;
+
         // Start in a different spot per-thread.
-        var urlIndex = Convert.ToInt32(Math.Floor((double)urls.Length / options.ThreadCount) * threadNumber);
+        var urlIndex = initialUrlIndex;
 
         while (true)
         {
@@ -143,26 +161,29 @@ public static class LoadTester
 
             var response = await client.GetAsync(urls[urlIndex] + appendedUrl);
 
-            var unintendedMiss = response.StatusCode == System.Net.HttpStatusCode.NotFound && appendedUrl == string.Empty;
+            Interlocked.Increment(ref metrics.RequestCount);
 
-            if (options.IsVerbose || unintendedMiss)
-            {
-                Console.WriteLine($"{response.StatusCode} {url}");
-            }
+            var unintendedMiss = response.StatusCode == System.Net.HttpStatusCode.NotFound && appendedUrl == string.Empty;
 
             if (unintendedMiss)
             {
                 Interlocked.Increment(ref metrics.MissedRequestCount);
             }
 
-            urlIndex = (urlIndex + 1) % urls.Length;
+            if (options.IsVerbose || unintendedMiss)
+            {
+                Console.WriteLine($"{response.StatusCode} {url}");
+            }
 
-            Interlocked.Increment(ref metrics.RequestCount);
+            var shouldStopForSeconds = !options.IsAllOnce && metrics.Stopwatch.ElapsedMilliseconds >= options.SecondsToRun * 1000;
+            var shouldStopForAllOnce = options.IsAllOnce && urlIndex == stopUrlIndex;
 
-            if (metrics.Stopwatch.ElapsedMilliseconds >= options.SecondsToRun * 1000)
+            if (shouldStopForSeconds || shouldStopForAllOnce)
             {
                 break;
             }
+
+            urlIndex = (urlIndex + 1) % urls.Length;
 
             if (options.IsSlowEnabled)
             {
