@@ -14,7 +14,8 @@ var targetListOption = new Option<string>(
     name: "--target-list",
     description: "Target list path (dependent on the mode)")
 {
-    IsRequired = true
+    IsRequired = true,
+    ArgumentHelpName = "path"
 };
 
 var threadCountOption = new Option<int>(
@@ -52,7 +53,10 @@ secondsToRunOption.AddValidator(result =>
 var chanceOf404Option = new Option<int>(
     name: "--chance-404",
     description: "Percent chance of an intentional page miss",
-    getDefaultValue: () => 0);
+    getDefaultValue: () => 0)
+{
+    ArgumentHelpName = "percent",
+};
 
 chanceOf404Option.AddValidator(result =>
 {
@@ -79,7 +83,10 @@ var allOnceOption = new Option<bool>(
 
 var makeUrlListOption = new Option<string>(
     name: "--make-list",
-    description: "Instead of running tests, reads the target list and outputs it to a local file. Useful to speed up repeated runs with slow sitemap retrieval.");
+    description: "Instead of running tests, reads the target list and outputs it to a local file. Useful to speed up repeated runs with slow sitemap retrieval.")
+{
+    ArgumentHelpName = "output file path",
+};
 
 var verboseOption = new Option<bool>(
     name: "--verbose",
@@ -99,9 +106,9 @@ Modes to get URL to test against:
     secondsToRunOption,
     chanceOf404Option,
     slowOption,
-    verboseOption,
     allOnceOption,
     makeUrlListOption,
+    verboseOption,
 };
 
 rootCommand.Name = "loadtest";
