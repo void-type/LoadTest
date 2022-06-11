@@ -2,7 +2,18 @@
 
 This is a simple website load tester. It's not fully-featured and is just a toy/tool for myself, but feel free to use it.
 
+## Build and Install
+
 You can use the [.NET SDK](https://dot.net/download) to build and run the source or download one of the [releases](https://github.com/void-type/LoadTest/releases) and [install it as a .NET tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools-how-to-use#use-the-tool-as-a-global-tool).
+
+```powershell
+cd ./src/LoadTest
+dotnet pack
+cd ../../
+dotnet tool install -g --add-source ./artifacts/nupkg loadtest
+```
+
+## Usage
 
 If using the SDK, replace `load-test` with `dotnet run --`.
 
