@@ -4,10 +4,11 @@ namespace LoadTest.Services;
 
 public static class LoadTester
 {
-    public static async Task<int> RunLoadTest(LoadTesterConfiguration config)
+    /// <summary>
+    /// Request URLs and log metrics.
+    /// </summary>
+    public static int RunLoadTest(LoadTesterConfiguration config, string[] urls)
     {
-        var urls = await UrlsRetriever.GetUrls(config.Path);
-
         if (urls.Length == 0)
         {
             Console.WriteLine("No URLs found. Exiting.");

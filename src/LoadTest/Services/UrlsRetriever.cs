@@ -15,6 +15,9 @@ public static class UrlsRetriever
             : await GetUrlsFromSitemapUrl(path);
     }
 
+    /// <summary>
+    /// Get URLs and save them to a local file.
+    /// </summary>
     public static async Task<int> SaveUrls(string path, string outputPath)
     {
         var urls = await GetUrls(path);

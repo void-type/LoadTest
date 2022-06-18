@@ -24,15 +24,18 @@ public static class Commands
         {
             var config = new LoadTesterConfiguration
             {
-                Path = context.ParseResult.GetValueForOption(CommandOptions.PathOption) ?? throw new InvalidOperationException(),
-                ThreadCount = context.ParseResult.GetValueForOption(CommandOptions.ThreadCountOption),
-                SecondsToRun = context.ParseResult.GetValueForOption(CommandOptions.SecondsToRunOption),
-                ChanceOf404 = context.ParseResult.GetValueForOption(CommandOptions.ChanceOf404Option),
-                IsDelayEnabled = context.ParseResult.GetValueForOption(CommandOptions.DelayOption),
-                IsVerbose = context.ParseResult.GetValueForOption(CommandOptions.VerboseOption),
+                ThreadCount = context.GetValueForOptionEnsureNotNull(CommandOptions.ThreadCountOption),
+                SecondsToRun = context.GetValueForOptionEnsureNotNull(CommandOptions.SecondsToRunOption),
+                ChanceOf404 = context.GetValueForOptionEnsureNotNull(CommandOptions.ChanceOf404Option),
+                IsDelayEnabled = context.GetValueForOptionEnsureNotNull(CommandOptions.DelayOption),
+                IsVerbose = context.GetValueForOptionEnsureNotNull(CommandOptions.VerboseOption),
             };
 
-            context.ExitCode = await LoadTester.RunLoadTest(config);
+            var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
+            var urls = await UrlsRetriever.GetUrls(path);
+
+
+            context.ExitCode = LoadTester.RunLoadTest(config, urls);
         });
 
         MakeListCommand = new Command("make-list", "Save the sitemap as a list of URLs. Speeds up repeat runs.")
@@ -45,8 +48,8 @@ public static class Commands
 
         MakeListCommand.SetHandler(async (InvocationContext context) =>
         {
-            string path = context.ParseResult.GetValueForOption(CommandOptions.PathOption) ?? throw new InvalidOperationException();
-            string outputPath = context.ParseResult.GetValueForOption(CommandOptions.OutputPathOption) ?? throw new InvalidOperationException();
+            string path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
+            string outputPath = context.GetValueForOptionEnsureNotNull(CommandOptions.OutputPathOption);
 
             context.ExitCode = await UrlsRetriever.SaveUrls(path, outputPath);
         });
