@@ -54,22 +54,6 @@ public static class PageArchiver
         {
             var url = urls[urlIndex];
 
-            var response = await client.GetAsync(url);
-
-            Interlocked.Increment(ref metrics.RequestCount);
-
-            var unintendedMiss = response.StatusCode == System.Net.HttpStatusCode.NotFound;
-
-            if (unintendedMiss)
-            {
-                Interlocked.Increment(ref metrics.MissedRequestCount);
-            }
-
-            if (config.IsVerbose || unintendedMiss)
-            {
-                Console.WriteLine($"{response.StatusCode} {url}");
-            }
-
             var uri = new Uri(url);
             var folderPathSegments = uri.Segments.ToList();
             var fileName = folderPathSegments.Last();
@@ -77,28 +61,54 @@ public static class PageArchiver
             var folderPath = config.OutputPath.TrimEnd('/', '\\') + string.Join(string.Empty, folderPathSegments);
             var filePath = Path.Combine(folderPath, fileName) + ".html";
 
-            var content = await response.Content.ReadAsStringAsync();
-
-            if (config.IsVerbose)
+            if (!File.Exists(filePath))
             {
-                Console.WriteLine($"Writing {content.Length} chars to {filePath}");
-            }
+                try
+                {
+                    var response = await client.GetAsync(url);
 
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
-            }
+                    Interlocked.Increment(ref metrics.RequestCount);
 
-            await File.WriteAllTextAsync(filePath, content);
+                    var unintendedMiss = response.StatusCode == System.Net.HttpStatusCode.NotFound;
+
+                    if (unintendedMiss)
+                    {
+                        Interlocked.Increment(ref metrics.MissedRequestCount);
+                    }
+
+                    if (config.IsVerbose || unintendedMiss)
+                    {
+                        Console.WriteLine($"{response.StatusCode} {url}");
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+
+                    if (config.IsVerbose)
+                    {
+                        Console.WriteLine($"Writing {content.Length} chars to {filePath}");
+                    }
+
+                    if (!Directory.Exists(folderPath))
+                    {
+                        Directory.CreateDirectory(folderPath);
+                    }
+
+                    await File.WriteAllTextAsync(filePath, content);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error getting {url}\n{ex}.");
+                }
+            }
 
             var shouldStop = urlIndex == stopUrlIndex;
+
+            urlIndex = (urlIndex + 1) % urls.Length;
 
             if (shouldStop)
             {
                 break;
             }
-
-            urlIndex = (urlIndex + 1) % urls.Length;
 
             if (config.IsDelayEnabled)
             {
