@@ -63,7 +63,7 @@ public static class LoadTester
 
             var url = urls[urlIndex] + appendedUrl;
 
-            var response = await client.GetAsync(urls[urlIndex] + appendedUrl);
+            var response = await client.GetAsync(url);
 
             Interlocked.Increment(ref metrics.RequestCount);
 
