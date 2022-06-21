@@ -18,7 +18,7 @@ public static class CommandOptions
 
         OutputPathOption = new Option<string>(
             name: "--output",
-            description: "File path to save URL list.")
+            description: "File path to save output to.")
         {
             IsRequired = true,
             ArgumentHelpName = "file path",
