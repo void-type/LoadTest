@@ -13,7 +13,7 @@ public static class PageArchiver
             return 1;
         }
 
-        Console.WriteLine("Running load test. Press Ctrl+C to stop.");
+        Console.WriteLine("Performing shallow archive. Press Ctrl+C to stop.");
 
         var metrics = new LoadTesterMetrics();
         metrics.Stopwatch.Start();
@@ -32,7 +32,7 @@ public static class PageArchiver
         Console.WriteLine($"{metrics.RequestCount} requests in {metrics.Stopwatch.Elapsed} = {metrics.RequestCount / (metrics.Stopwatch.ElapsedMilliseconds / 1000)} RPS");
 
         var missedPercent = (double)metrics.MissedRequestCount / metrics.RequestCount * 100;
-        Console.WriteLine($"{metrics.MissedRequestCount} unintended missed requests = {missedPercent:F2}%");
+        Console.WriteLine($"{metrics.MissedRequestCount} errors = {missedPercent:F2}%");
 
         return 0;
     }
@@ -56,10 +56,10 @@ public static class PageArchiver
 
             var uri = new Uri(url);
             var folderPathSegments = uri.Segments.ToList();
-            var fileName = folderPathSegments.Last();
+            var fileName = folderPathSegments.Last() + ".html";
             folderPathSegments.RemoveAt(folderPathSegments.Count - 1);
             var folderPath = config.OutputPath.TrimEnd('/', '\\') + string.Join(string.Empty, folderPathSegments);
-            var filePath = Path.Combine(folderPath, fileName) + ".html";
+            var filePath = Path.Combine(folderPath, fileName);
 
             if (!File.Exists(filePath))
             {
@@ -69,14 +69,9 @@ public static class PageArchiver
 
                     Interlocked.Increment(ref metrics.RequestCount);
 
-                    var unintendedMiss = response.StatusCode == System.Net.HttpStatusCode.NotFound;
+                    response.EnsureSuccessStatusCode();
 
-                    if (unintendedMiss)
-                    {
-                        Interlocked.Increment(ref metrics.MissedRequestCount);
-                    }
-
-                    if (config.IsVerbose || unintendedMiss)
+                    if (config.IsVerbose)
                     {
                         Console.WriteLine($"{response.StatusCode} {url}");
                     }
@@ -97,18 +92,19 @@ public static class PageArchiver
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error getting {url}\n{ex}.");
+                    Console.WriteLine($"Error archiving {url}\n{ex}");
+                    Interlocked.Increment(ref metrics.MissedRequestCount);
                 }
             }
 
             var shouldStop = urlIndex == stopUrlIndex;
 
-            urlIndex = (urlIndex + 1) % urls.Length;
-
             if (shouldStop)
             {
                 break;
             }
+
+            urlIndex = (urlIndex + 1) % urls.Length;
 
             if (config.IsDelayEnabled)
             {

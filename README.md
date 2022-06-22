@@ -11,6 +11,7 @@ cd ./src/LoadTest
 dotnet pack
 cd ../../
 dotnet tool install -g --add-source ./artifacts/nupkg loadtest
+dotnet tool update -g --add-source ./artifacts/nupkg loadtest
 ```
 
 ## Usage
