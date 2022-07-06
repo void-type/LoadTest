@@ -4,7 +4,7 @@ using LoadTest.Commands;
 var rootCommand = new RootCommand(description: "Simple website load tester.");
 rootCommand.Name = "load-test";
 
-rootCommand.Add(Commands.RunCommand);
+rootCommand.Add(Commands.LoadTestCommand);
 rootCommand.Add(Commands.MakeListCommand);
 rootCommand.Add(Commands.ArchivePagesCommand);
 

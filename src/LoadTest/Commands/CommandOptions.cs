@@ -6,7 +6,18 @@ public static class CommandOptions
 {
     static CommandOptions()
     {
-        PathOption = new Option<string>(
+        PathOption = BuildPathOption();
+        OutputPathOption = BuildOutputPathOption();
+        ThreadCountOption = BuildThreadCountOption();
+        SecondsToRunOption = BuildSecondsToRunOption();
+        ChanceOf404Option = BuildChanceOf404Option();
+        DelayOption = BuildDelayOption();
+        VerboseOption = BuildVerboseOption();
+    }
+
+    private static Option<string> BuildPathOption()
+    {
+        var pathOption = new Option<string>(
             name: "--path",
             description: "URL list file path or sitemap URL.")
         {
@@ -14,9 +25,14 @@ public static class CommandOptions
             ArgumentHelpName = "file path or URL",
         };
 
-        PathOption.AddAlias("-p");
+        pathOption.AddAlias("-p");
 
-        OutputPathOption = new Option<string>(
+        return pathOption;
+    }
+
+    private static Option<string> BuildOutputPathOption()
+    {
+        var outputPathOption = new Option<string>(
             name: "--output",
             description: "File path to save output to.")
         {
@@ -24,45 +40,60 @@ public static class CommandOptions
             ArgumentHelpName = "file path",
         };
 
-        OutputPathOption.AddAlias("-o");
+        outputPathOption.AddAlias("-o");
 
-        ThreadCountOption = new Option<int>(
+        return outputPathOption;
+    }
+
+    private static Option<int> BuildThreadCountOption()
+    {
+        var threadCountOption = new Option<int>(
             name: "--threads",
             description: "Number of concurrent threads to make requests.",
             getDefaultValue: () => 2)
         {
         };
 
-        ThreadCountOption.AddAlias("-t");
+        threadCountOption.AddAlias("-t");
 
-        ThreadCountOption.AddValidator(result =>
+        threadCountOption.AddValidator(result =>
         {
-            if (result.GetValueForOption(ThreadCountOption) < 1)
+            if (result.GetValueForOption(threadCountOption) < 1)
             {
                 var optionName = result.Option.Name;
                 result.ErrorMessage = $"{optionName} must be greater than 0.";
             }
         });
 
-        SecondsToRunOption = new Option<int>(
+        return threadCountOption;
+    }
+
+    private static Option<int> BuildSecondsToRunOption()
+    {
+        var secondsToRunOption = new Option<int>(
             name: "--seconds",
             description: "Number of seconds to run before stopping. If zero, requests all URLs once.",
             getDefaultValue: () => 5)
         {
         };
 
-        SecondsToRunOption.AddAlias("-s");
+        secondsToRunOption.AddAlias("-s");
 
-        SecondsToRunOption.AddValidator(result =>
+        secondsToRunOption.AddValidator(result =>
         {
-            if (result.GetValueForOption(SecondsToRunOption) < 0)
+            if (result.GetValueForOption(secondsToRunOption) < 0)
             {
                 var optionName = result.Option.Name;
                 result.ErrorMessage = $"{optionName} must be greater than or equal to 0.";
             }
         });
 
-        ChanceOf404Option = new Option<int>(
+        return secondsToRunOption;
+    }
+
+    private static Option<int> BuildChanceOf404Option()
+    {
+        var chanceOf404Option = new Option<int>(
             name: "--chance-404",
             description: "Percent chance of an intentional page miss.",
             getDefaultValue: () => 0)
@@ -70,30 +101,40 @@ public static class CommandOptions
             ArgumentHelpName = "percent",
         };
 
-        ChanceOf404Option.AddAlias("-e");
+        chanceOf404Option.AddAlias("-e");
 
-        ChanceOf404Option.AddValidator(result =>
+        chanceOf404Option.AddValidator(result =>
         {
-            if (result.GetValueForOption(ChanceOf404Option) < 0)
+            if (result.GetValueForOption(chanceOf404Option) < 0)
             {
                 var optionName = result.Option.Name;
                 result.ErrorMessage = $"{optionName} must be greater than or equal to 0.";
             }
 
-            if (result.GetValueForOption(ChanceOf404Option) > 100)
+            if (result.GetValueForOption(chanceOf404Option) > 100)
             {
                 var optionName = result.Option.Name;
                 result.ErrorMessage = $"{optionName} must be less than or equal to 100.";
             }
         });
 
-        DelayOption = new Option<bool>(
+        return chanceOf404Option;
+    }
+
+    private static Option<bool> BuildDelayOption()
+    {
+        var delayOption = new Option<bool>(
             name: "--delay",
             description: "Add delay between requests.");
 
-        DelayOption.AddAlias("-d");
+        delayOption.AddAlias("-d");
 
-        VerboseOption = new Option<bool>(
+        return delayOption;
+    }
+
+    private static Option<bool> BuildVerboseOption()
+    {
+        return new Option<bool>(
             name: "--verbose",
             description: "Show more logging.");
     }

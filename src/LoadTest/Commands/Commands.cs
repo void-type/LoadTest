@@ -8,8 +8,14 @@ public static class Commands
 {
     static Commands()
     {
-        // Run load test
-        RunCommand = new Command("run", "Run a load test.")
+        LoadTestCommand = BuildLoadTestCommand();
+        MakeListCommand = BuildMakeListCommand();
+        ArchivePagesCommand = BuildArchivePagesCommand();
+    }
+
+    private static Command BuildLoadTestCommand()
+    {
+        var runCommand = new Command("run", "Run a load test.")
         {
             CommandOptions.PathOption,
             CommandOptions.ThreadCountOption,
@@ -19,9 +25,9 @@ public static class Commands
             CommandOptions.VerboseOption,
         };
 
-        RunCommand.AddAlias("r");
+        runCommand.AddAlias("r");
 
-        RunCommand.SetHandler(async (InvocationContext context) =>
+        runCommand.SetHandler(async (InvocationContext context) =>
         {
             var config = new LoadTesterConfiguration
             {
@@ -38,16 +44,20 @@ public static class Commands
             context.ExitCode = LoadTester.RunLoadTest(config, urls);
         });
 
-        // Make list
-        MakeListCommand = new Command("make-list", "Save the sitemap as a list of URLs. Speeds up repeat runs.")
+        return runCommand;
+    }
+
+    private static Command BuildMakeListCommand()
+    {
+        var makeListCommand = new Command("make-list", "Save the sitemap as a list of URLs. Speeds up repeat runs.")
         {
             CommandOptions.PathOption,
             CommandOptions.OutputPathOption,
         };
 
-        MakeListCommand.AddAlias("ml");
+        makeListCommand.AddAlias("ml");
 
-        MakeListCommand.SetHandler(async (InvocationContext context) =>
+        makeListCommand.SetHandler(async (InvocationContext context) =>
         {
             string path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
             string outputPath = context.GetValueForOptionEnsureNotNull(CommandOptions.OutputPathOption);
@@ -55,8 +65,12 @@ public static class Commands
             context.ExitCode = await UrlsRetriever.SaveUrls(path, outputPath);
         });
 
-        // Archive pages
-        ArchivePagesCommand = new Command("archive-pages", "Save the html from the request.")
+        return makeListCommand;
+    }
+
+    private static Command BuildArchivePagesCommand()
+    {
+        var archivePagesCommand = new Command("archive-pages", "Save the html from the request.")
         {
             CommandOptions.PathOption,
             CommandOptions.OutputPathOption,
@@ -65,9 +79,9 @@ public static class Commands
             CommandOptions.VerboseOption,
         };
 
-        ArchivePagesCommand.AddAlias("ar");
+        archivePagesCommand.AddAlias("ar");
 
-        ArchivePagesCommand.SetHandler(async (InvocationContext context) =>
+        archivePagesCommand.SetHandler(async (InvocationContext context) =>
         {
             var config = new PageArchiverConfiguration
             {
@@ -82,9 +96,11 @@ public static class Commands
 
             context.ExitCode = PageArchiver.ShallowArchive(config, urls);
         });
+
+        return archivePagesCommand;
     }
 
-    public static Command RunCommand { get; }
+    public static Command LoadTestCommand { get; }
     public static Command MakeListCommand { get; }
     public static Command ArchivePagesCommand { get; }
 }
