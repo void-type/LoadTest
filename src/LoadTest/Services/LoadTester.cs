@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using LoadTest.Helpers;
 
 namespace LoadTest.Services;
 
@@ -20,18 +21,19 @@ public static class LoadTester
         var metrics = new LoadTesterMetrics();
         metrics.Stopwatch.Start();
 
-        var urlBlockSize = Convert.ToInt32(Math.Floor((double)urls.Length / config.ThreadCount));
-
         var tasks = Enumerable
             .Range(0, config.ThreadCount)
-            .Select(i => StartThread(i, urls, metrics, config, urlBlockSize))
+            .Select(i => StartThread(i, urls, metrics, config))
             .ToArray();
 
         Task.WaitAll(tasks);
 
         metrics.Stopwatch.Stop();
         Console.WriteLine("Finished.");
-        Console.WriteLine($"{metrics.RequestCount} requests in {metrics.Stopwatch.Elapsed} = {metrics.RequestCount / (metrics.Stopwatch.ElapsedMilliseconds / 1000)} RPS");
+
+        var seconds = metrics.Stopwatch.ElapsedMilliseconds / 1000;
+        var safeSeconds = seconds == 0 ? 1 : seconds;
+        Console.WriteLine($"{metrics.RequestCount} requests in {metrics.Stopwatch.Elapsed} = {metrics.RequestCount / safeSeconds} RPS");
 
         var missedPercent = (double)metrics.MissedRequestCount / metrics.RequestCount * 100;
         Console.WriteLine($"{metrics.MissedRequestCount} unintended missed requests = {missedPercent:F2}%");
@@ -39,15 +41,16 @@ public static class LoadTester
         return 0;
     }
 
-    private static async Task StartThread(int threadNumber, string[] urls, LoadTesterMetrics metrics, LoadTesterConfiguration config, int urlBlockSize)
+    private static async Task StartThread(int threadNumber, string[] urls, LoadTesterMetrics metrics, LoadTesterConfiguration config)
     {
         using var client = new HttpClient();
 
-        // Thread number is zero-based
-        var initialUrlIndex = urlBlockSize * threadNumber;
+        (int initialUrlIndex, int stopUrlIndex) = ThreadHelpers.GetBlockStartAndEnd(threadNumber, config.ThreadCount, urls.Length);
 
-        // If the last thread, then go to the last URL, else go to the end of this block.
-        var stopUrlIndex = threadNumber == config.ThreadCount ? urls.Length - 1 : urlBlockSize * (threadNumber + 1) - 1;
+        if (initialUrlIndex == -1)
+        {
+            return;
+        }
 
         // Start in a different spot per-thread.
         var urlIndex = initialUrlIndex;
