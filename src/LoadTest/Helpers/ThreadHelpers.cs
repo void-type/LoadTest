@@ -4,6 +4,11 @@ namespace LoadTest.Helpers
     {
         public static (int firstIndex, int lastIndex) GetBlockStartAndEnd(int blockIndex, int blockCount, int totalCount)
         {
+            if (blockIndex >= blockCount)
+            {
+                return (-1, -1);
+            }
+
             if (blockCount > totalCount)
             {
                 return blockIndex < totalCount ?
