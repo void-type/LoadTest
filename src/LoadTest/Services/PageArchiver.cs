@@ -32,7 +32,7 @@ public static class PageArchiver
 
         var seconds = metrics.Stopwatch.ElapsedMilliseconds / 1000;
         var safeSeconds = seconds == 0 ? 1 : seconds;
-        Console.WriteLine($"{metrics.RequestCount} requests in {metrics.Stopwatch.Elapsed} = {metrics.RequestCount / seconds} RPS");
+        Console.WriteLine($"{metrics.RequestCount} requests in {metrics.Stopwatch.Elapsed} = {metrics.RequestCount / safeSeconds} RPS");
 
         var missedPercent = (double)metrics.MissedRequestCount / metrics.RequestCount * 100;
         Console.WriteLine($"{metrics.MissedRequestCount} errors = {missedPercent:F2}%");
