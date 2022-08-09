@@ -1,6 +1,6 @@
 namespace LoadTest.Helpers
 {
-    public class ThreadHelpers
+    public static class ThreadHelpers
     {
         public static (int firstIndex, int lastIndex) GetBlockStartAndEnd(int blockIndex, int blockCount, int totalCount)
         {

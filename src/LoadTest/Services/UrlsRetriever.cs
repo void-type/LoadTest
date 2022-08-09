@@ -70,7 +70,7 @@ public static class UrlsRetriever
                     .Where(x => x.Name.LocalName == "link" && x.Attribute("rel")?.Value == "alternate" && !string.IsNullOrWhiteSpace(x.Attribute("href")?.Value))
                     .Select(x => x.Attribute("href")!.Value);
 
-                urls.AddRange(locs);
+                urls.AddRange(alts);
             }
 
             var childSitemapUrls = xml
