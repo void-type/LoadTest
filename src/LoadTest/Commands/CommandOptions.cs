@@ -13,6 +13,7 @@ public static class CommandOptions
         ChanceOf404Option = BuildChanceOf404Option();
         DelayOption = BuildDelayOption();
         VerboseOption = BuildVerboseOption();
+        RequestMethodOption = BuildRequestMethodOption();
     }
 
     private static Option<string> BuildPathOption()
@@ -49,8 +50,8 @@ public static class CommandOptions
     {
         var threadCountOption = new Option<int>(
             name: "--threads",
-            description: "Number of concurrent threads to make requests.",
-            getDefaultValue: () => 2)
+            getDefaultValue: () => 2,
+            description: "Number of concurrent threads to make requests.")
         {
         };
 
@@ -72,10 +73,8 @@ public static class CommandOptions
     {
         var secondsToRunOption = new Option<int>(
             name: "--seconds",
-            description: "Number of seconds to run before stopping. If zero, requests all URLs once.",
-            getDefaultValue: () => 5)
-        {
-        };
+            getDefaultValue: () => 5,
+            description: "Number of seconds to run before stopping. If zero, requests all URLs once.");
 
         secondsToRunOption.AddAlias("-s");
 
@@ -95,8 +94,8 @@ public static class CommandOptions
     {
         var chanceOf404Option = new Option<int>(
             name: "--chance-404",
-            description: "Percent chance of an intentional page miss.",
-            getDefaultValue: () => 0)
+            getDefaultValue: () => 0,
+            description: "Percent chance of an intentional page miss.")
         {
             ArgumentHelpName = "percent",
         };
@@ -139,6 +138,19 @@ public static class CommandOptions
             description: "Show more logging.");
     }
 
+    private static Option<string> BuildRequestMethodOption()
+    {
+        var requestMethodOption = new Option<string>(
+            name: "--method",
+            getDefaultValue: () => "GET",
+            description: "Change the request method.");
+
+        requestMethodOption.FromAmong("HEAD", "GET");
+        requestMethodOption.AddAlias("-m");
+
+        return requestMethodOption;
+    }
+
     public static Option<string> PathOption { get; }
     public static Option<string> OutputPathOption { get; }
     public static Option<int> ThreadCountOption { get; }
@@ -146,4 +158,5 @@ public static class CommandOptions
     public static Option<int> ChanceOf404Option { get; }
     public static Option<bool> DelayOption { get; }
     public static Option<bool> VerboseOption { get; }
+    public static Option<string> RequestMethodOption { get; }
 }

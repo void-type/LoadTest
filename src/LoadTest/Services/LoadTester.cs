@@ -59,18 +59,20 @@ public static class LoadTester
         {
             var appendedUrl = string.Empty;
 
-            if (config.ChanceOf404 >= 100 || config.ChanceOf404 > 0 && RandomNumberGenerator.GetInt32(0, 100) < config.ChanceOf404)
+            if (config.ChanceOf404 >= 100 || (config.ChanceOf404 > 0 && RandomNumberGenerator.GetInt32(0, 100) < config.ChanceOf404))
             {
                 appendedUrl = Guid.NewGuid().ToString();
             }
 
             var url = urls[urlIndex] + appendedUrl;
 
-            var response = await client.GetAsync(url);
+            var request = new HttpRequestMessage(config.RequestMethod, url);
+
+            var response = await client.SendAsync(request);
 
             Interlocked.Increment(ref metrics.RequestCount);
 
-            var unintendedMiss = response.StatusCode == System.Net.HttpStatusCode.NotFound && appendedUrl == string.Empty;
+            var unintendedMiss = response.StatusCode == System.Net.HttpStatusCode.NotFound && appendedUrl?.Length == 0;
 
             if (unintendedMiss)
             {
