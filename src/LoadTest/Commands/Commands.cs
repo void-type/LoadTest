@@ -22,6 +22,7 @@ public static class Commands
             CommandOptions.SecondsToRunOption,
             CommandOptions.ChanceOf404Option,
             CommandOptions.DelayOption,
+            CommandOptions.RequestMethodOption,
             CommandOptions.VerboseOption,
         };
 
@@ -35,6 +36,11 @@ public static class Commands
                 SecondsToRun = context.GetValueForOptionEnsureNotNull(CommandOptions.SecondsToRunOption),
                 ChanceOf404 = context.GetValueForOptionEnsureNotNull(CommandOptions.ChanceOf404Option),
                 IsDelayEnabled = context.GetValueForOptionEnsureNotNull(CommandOptions.DelayOption),
+                RequestMethod = context.GetValueForOptionEnsureNotNull(CommandOptions.RequestMethodOption) switch
+                {
+                    "HEAD" => HttpMethod.Head,
+                    _ => HttpMethod.Get,
+                },
                 IsVerbose = context.GetValueForOptionEnsureNotNull(CommandOptions.VerboseOption),
             };
 
