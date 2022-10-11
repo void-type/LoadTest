@@ -8,7 +8,7 @@ public static class LoadTester
     /// <summary>
     /// Request URLs and log metrics.
     /// </summary>
-    public static int RunLoadTest(LoadTesterConfiguration config, string[] urls)
+    public static async Task<int> RunLoadTestAsync(LoadTesterConfiguration config, string[] urls)
     {
         if (urls.Length == 0)
         {
@@ -21,12 +21,15 @@ public static class LoadTester
         var metrics = new LoadTesterMetrics();
         metrics.Stopwatch.Start();
 
+        using var client = new HttpClient();
+
+        // We're not using Parallel.Foreach here because we need to optionally run continually.
         var tasks = Enumerable
             .Range(0, config.ThreadCount)
-            .Select(i => StartThread(i, urls, metrics, config))
+            .Select(i => StartThread(i, urls, metrics, config, client))
             .ToArray();
 
-        Task.WaitAll(tasks);
+        await Task.WhenAll(tasks);
 
         metrics.Stopwatch.Stop();
         Console.WriteLine("Finished.");
@@ -41,10 +44,8 @@ public static class LoadTester
         return 0;
     }
 
-    private static async Task StartThread(int threadNumber, string[] urls, LoadTesterMetrics metrics, LoadTesterConfiguration config)
+    private static async Task StartThread(int threadNumber, string[] urls, LoadTesterMetrics metrics, LoadTesterConfiguration config, HttpClient client)
     {
-        using var client = new HttpClient();
-
         (int initialUrlIndex, int stopUrlIndex) = ThreadHelpers.GetBlockStartAndEnd(threadNumber, config.ThreadCount, urls.Length);
 
         if (initialUrlIndex == -1)

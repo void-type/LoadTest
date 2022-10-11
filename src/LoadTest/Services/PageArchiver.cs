@@ -7,7 +7,7 @@ public static class PageArchiver
     /// <summary>
     /// Saves a shallow copy of the page HTML.
     /// </summary>
-    public static int ShallowArchive(PageArchiverConfiguration config, string[] urls)
+    public static async Task<int> ShallowArchiveAsync(PageArchiverConfiguration config, string[] urls)
     {
         if (urls.Length == 0)
         {
@@ -20,12 +20,11 @@ public static class PageArchiver
         var metrics = new LoadTesterMetrics();
         metrics.Stopwatch.Start();
 
-        var tasks = Enumerable
-            .Range(0, config.ThreadCount)
-            .Select(i => StartThread(i, urls, metrics, config))
-            .ToArray();
+        using var client = new HttpClient();
 
-        Task.WaitAll(tasks);
+        var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = config.ThreadCount };
+
+        await Parallel.ForEachAsync(urls, parallelOptions, async (url, _) => await ArchiveUrl(url, metrics, config, client));
 
         metrics.Stopwatch.Stop();
         Console.WriteLine("Finished.");
@@ -40,80 +39,61 @@ public static class PageArchiver
         return 0;
     }
 
-    private static async Task StartThread(int threadNumber, string[] urls, LoadTesterMetrics metrics, PageArchiverConfiguration config)
+    private static async Task ArchiveUrl(string url, LoadTesterMetrics metrics, PageArchiverConfiguration config, HttpClient client)
     {
-        using var client = new HttpClient();
+        var uri = new Uri(url);
+        var uriSegments = uri.Segments.ToList();
 
-        (int initialUrlIndex, int stopUrlIndex) = ThreadHelpers.GetBlockStartAndEnd(threadNumber, config.ThreadCount, urls.Length);
+        var baseFolder = config.OutputPath.TrimEnd('/', '\\');
 
-        if (initialUrlIndex == -1)
+        var lastUriSegment = uriSegments.Last();
+
+        var fileName = (lastUriSegment == "/" ? "index" : lastUriSegment) + ".html";
+
+        uriSegments.RemoveAt(uriSegments.Count - 1);
+        var folderPath = baseFolder + string.Concat(uriSegments);
+
+        var filePath = Path.Combine(folderPath, fileName);
+
+        if (!File.Exists(filePath))
         {
-            return;
+            try
+            {
+                var response = await client.GetAsync(url);
+
+                Interlocked.Increment(ref metrics.RequestCount);
+
+                response.EnsureSuccessStatusCode();
+
+                if (config.IsVerbose)
+                {
+                    Console.WriteLine($"{response.StatusCode} {url}");
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (config.IsVerbose)
+                {
+                    Console.WriteLine($"Writing {content.Length} chars to {filePath}");
+                }
+
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                await File.WriteAllTextAsync(filePath, content);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error archiving {url}\n{ex}");
+                Interlocked.Increment(ref metrics.MissedRequestCount);
+            }
         }
 
-        // Start in a different spot per-thread.
-        var urlIndex = initialUrlIndex;
-
-        while (true)
+        if (config.IsDelayEnabled)
         {
-            var url = urls[urlIndex];
-
-            var uri = new Uri(url);
-            var folderPathSegments = uri.Segments.ToList();
-            var fileName = folderPathSegments.Last() + ".html";
-            folderPathSegments.RemoveAt(folderPathSegments.Count - 1);
-            var folderPath = config.OutputPath.TrimEnd('/', '\\') + string.Join(string.Empty, folderPathSegments);
-            var filePath = Path.Combine(folderPath, fileName);
-
-            if (!File.Exists(filePath))
-            {
-                try
-                {
-                    var response = await client.GetAsync(url);
-
-                    Interlocked.Increment(ref metrics.RequestCount);
-
-                    response.EnsureSuccessStatusCode();
-
-                    if (config.IsVerbose)
-                    {
-                        Console.WriteLine($"{response.StatusCode} {url}");
-                    }
-
-                    var content = await response.Content.ReadAsStringAsync();
-
-                    if (config.IsVerbose)
-                    {
-                        Console.WriteLine($"Writing {content.Length} chars to {filePath}");
-                    }
-
-                    if (!Directory.Exists(folderPath))
-                    {
-                        Directory.CreateDirectory(folderPath);
-                    }
-
-                    await File.WriteAllTextAsync(filePath, content);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error archiving {url}\n{ex}");
-                    Interlocked.Increment(ref metrics.MissedRequestCount);
-                }
-            }
-
-            var shouldStop = urlIndex == stopUrlIndex;
-
-            if (shouldStop)
-            {
-                break;
-            }
-
-            urlIndex = (urlIndex + 1) % urls.Length;
-
-            if (config.IsDelayEnabled)
-            {
-                await Task.Delay(500);
-            }
+            await Task.Delay(500);
         }
     }
 }

@@ -47,7 +47,7 @@ public static class Commands
             var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
             var urls = await UrlsRetriever.GetUrls(path);
 
-            context.ExitCode = LoadTester.RunLoadTest(config, urls);
+            context.ExitCode = await LoadTester.RunLoadTestAsync(config, urls);
         });
 
         return runCommand;
@@ -100,7 +100,7 @@ public static class Commands
             var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
             var urls = await UrlsRetriever.GetUrls(path);
 
-            context.ExitCode = PageArchiver.ShallowArchive(config, urls);
+            context.ExitCode = await PageArchiver.ShallowArchiveAsync(config, urls);
         });
 
         return archivePagesCommand;
