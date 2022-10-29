@@ -8,6 +8,8 @@
 
     <PackAsTool>true</PackAsTool>
     <PackageOutputPath>../../artifacts/dist</PackageOutputPath>
+    <Title>vt-loadtest</Title>
+    <Description>This is a simple website load tester. It's not fully-featured and is just a toy/tool for myself, but feel free to use it.</Description>
     <AssemblyName>vt-loadtest</AssemblyName>
     <PackageId>vt-loadtest</PackageId>
     <ToolCommandName>vt-loadtest</ToolCommandName>
