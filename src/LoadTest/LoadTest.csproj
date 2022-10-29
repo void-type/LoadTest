@@ -7,8 +7,10 @@
     <Nullable>enable</Nullable>
 
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>load-test</ToolCommandName>
     <PackageOutputPath>../../artifacts/dist</PackageOutputPath>
+    <AssemblyName>vt-loadtest</AssemblyName>
+    <PackageId>vt-loadtest</PackageId>
+    <ToolCommandName>vt-loadtest</ToolCommandName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,5 +33,25 @@
     </PackageReference>
     <PackageReference Include="system.commandline" Version="2.0.0-beta4.22272.1" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\docs\*.md" Pack="true" PackagePath="\docs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Authors>Jeff Schreiner and contributors</Authors>
+    <Copyright>Copyright 2022-present Jeff Schreiner</Copyright>
+    <RepositoryUrl>https://github.com/void-type/LoadTest</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <ReleaseNotes>See commits since last release.</ReleaseNotes>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+  </PropertyGroup>
 
 </Project>
