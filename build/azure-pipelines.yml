@@ -1,0 +1,36 @@
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Use .NET SDK 6.0'
+  inputs:
+    packageType: 'sdk'
+    version: '6.0.300'
+    includePreviewVersions: false
+
+- task: 'PowerShell@2'
+  displayName: 'Build, Test, and Pack'
+  inputs:
+    targetType: 'filePath'
+    filePath: 'build/build.ps1'
+    arguments: '-SkipTestReport'
+    workingDirectory: 'build'
+
+- task: PublishCodeCoverageResults@1
+  displayName: 'Publish Code Coverage'
+  inputs:
+    codeCoverageTool: 'cobertura'
+    summaryFileLocation: 'artifacts/testResults/*/coverage.cobertura.xml'
+
+- task: PublishTestResults@2
+  displayName: 'Publish Test Results'
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: 'artifacts/testResults/*.trx'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifacts'
+  inputs:
+    pathtoPublish: 'artifacts/dist'
+    artifactName: 'dist'
