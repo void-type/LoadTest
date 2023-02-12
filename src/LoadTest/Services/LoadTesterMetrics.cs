@@ -1,14 +1,7 @@
-using System.Diagnostics;
+﻿namespace LoadTest.Services;
 
-namespace LoadTest.Services;
-
-public class LoadTesterMetrics
+public struct LoadTesterThreadMetrics
 {
-    // These are intentionally public fields for concurrent incrementing.
-#pragma warning disable S1104
-    public long RequestCount;
-    public long MissedRequestCount;
-#pragma warning disable S1104
-
-    public Stopwatch Stopwatch { get; } = new();
+    public long RequestCount { get; set; }
+    public long MissedRequestCount { get; set; }
 }

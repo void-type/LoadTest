@@ -1,6 +1,6 @@
+﻿using LoadTest.Services;
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using LoadTest.Services;
 
 namespace LoadTest.Commands;
 
@@ -65,8 +65,8 @@ public static class Commands
 
         makeListCommand.SetHandler(async (InvocationContext context) =>
         {
-            string path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
-            string outputPath = context.GetValueForOptionEnsureNotNull(CommandOptions.OutputPathOption);
+            var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
+            var outputPath = context.GetValueForOptionEnsureNotNull(CommandOptions.OutputPathOption);
 
             context.ExitCode = await UrlsRetriever.SaveUrls(path, outputPath);
         });

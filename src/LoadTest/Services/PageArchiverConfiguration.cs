@@ -1,4 +1,4 @@
-namespace LoadTest.Services;
+﻿namespace LoadTest.Services;
 
 public class PageArchiverConfiguration
 {

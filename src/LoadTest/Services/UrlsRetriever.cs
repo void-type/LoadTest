@@ -1,16 +1,18 @@
-using System.Xml;
+﻿using System.Xml;
 using System.Xml.Linq;
 
 namespace LoadTest.Services;
 
 public static class UrlsRetriever
 {
+    private static readonly HttpClient _httpClient = new();
+
     /// <summary>
-    /// Get URLs from a local file or remote sitemap.
+    /// Get URLs from a local file or local/remote sitemap.
     /// </summary>
     public static async Task<string[]> GetUrls(string path)
     {
-        return File.Exists(path)
+        return File.Exists(path) && !path.EndsWith(".xml")
             ? await GetUrlsFromUrlListFile(path)
             : await GetUrlsFromSitemapUrl(path);
     }
@@ -38,21 +40,20 @@ public static class UrlsRetriever
     private static async Task<string[]> GetUrlsFromSitemapUrl(string sitemapUrl)
     {
         Console.WriteLine("Getting URLs from sitemap.");
-        using var httpClient = new HttpClient();
 
-        var urls = await GetUrlsFromSitemapRecursive(httpClient, sitemapUrl);
+        var urls = await GetUrlsFromSitemapRecursive(sitemapUrl);
 
         return urls
             .Distinct()
             .ToArray();
     }
 
-    private static async Task<List<string>> GetUrlsFromSitemapRecursive(HttpClient httpClient, string sitemapUrl)
+    private static async Task<List<string>> GetUrlsFromSitemapRecursive(string sitemapUrl)
     {
         try
         {
-            var xmlString = await httpClient.GetStringAsync(sitemapUrl);
-            var xml = XElement.Parse(xmlString);
+            var xml = await GetSitemapXml(sitemapUrl);
+
             var urls = new List<string>();
 
             var urlSet = xml.DescendantsAndSelf()
@@ -82,7 +83,8 @@ public static class UrlsRetriever
 
             foreach (var childSitemapUrl in childSitemapUrls)
             {
-                urls.AddRange(await GetUrlsFromSitemapRecursive(httpClient, childSitemapUrl));
+                Console.WriteLine($"Following child sitemap at {childSitemapUrl}.");
+                urls.AddRange(await GetUrlsFromSitemapRecursive(childSitemapUrl));
             }
 
             return urls;
@@ -99,5 +101,18 @@ public static class UrlsRetriever
 
             return new();
         }
+    }
+
+    /// <summary>
+    /// Can get XML from a file or URL.
+    /// </summary>
+    /// <param name="sitemapUrl"></param>
+    private static async Task<XElement> GetSitemapXml(string sitemapUrl)
+    {
+        var xmlString = File.Exists(sitemapUrl) ?
+            await File.ReadAllTextAsync(sitemapUrl) :
+            await _httpClient.GetStringAsync(sitemapUrl);
+
+        return XElement.Parse(xmlString);
     }
 }

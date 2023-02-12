@@ -1,4 +1,4 @@
-using LoadTest.Helpers;
+﻿using System.Diagnostics;
 
 namespace LoadTest.Services;
 
@@ -17,30 +17,28 @@ public static class PageArchiver
 
         Console.WriteLine("Performing shallow archive. Press Ctrl+C to stop.");
 
-        var metrics = new LoadTesterMetrics();
-        metrics.Stopwatch.Start();
+        var startTime = Stopwatch.GetTimestamp();
 
         using var client = new HttpClient();
 
         var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = config.ThreadCount };
 
-        await Parallel.ForEachAsync(urls, parallelOptions, async (url, _) => await ArchiveUrl(url, metrics, config, client));
+        await Parallel.ForEachAsync(urls, parallelOptions, async (url, _) => await ArchiveUrl(url, config, client));
 
-        metrics.Stopwatch.Stop();
+        var elapsedTime = Stopwatch.GetElapsedTime(startTime);
         Console.WriteLine("Finished.");
 
-        var seconds = metrics.Stopwatch.ElapsedMilliseconds / 1000;
+        var seconds = elapsedTime.TotalMilliseconds / 1000;
         var safeSeconds = seconds == 0 ? 1 : seconds;
-        Console.WriteLine($"{metrics.RequestCount} requests in {metrics.Stopwatch.Elapsed} = {metrics.RequestCount / safeSeconds} RPS");
-
-        var missedPercent = (double)metrics.MissedRequestCount / metrics.RequestCount * 100;
-        Console.WriteLine($"{metrics.MissedRequestCount} errors = {missedPercent:F2}%");
+        Console.WriteLine($"{urls.Length} requests in {elapsedTime} = {urls.Length / safeSeconds} RPS");
 
         return 0;
     }
 
-    private static async Task ArchiveUrl(string url, LoadTesterMetrics metrics, PageArchiverConfiguration config, HttpClient client)
+    private static async Task ArchiveUrl(string url, PageArchiverConfiguration config, HttpClient client)
     {
+        var metrics = new LoadTesterThreadMetrics();
+
         var uri = new Uri(url);
         var uriSegments = uri.Segments.ToList();
 
@@ -61,7 +59,7 @@ public static class PageArchiver
             {
                 var response = await client.GetAsync(url);
 
-                Interlocked.Increment(ref metrics.RequestCount);
+                metrics.RequestCount++;
 
                 response.EnsureSuccessStatusCode();
 
@@ -86,8 +84,8 @@ public static class PageArchiver
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error archiving {url}\n{ex}");
-                Interlocked.Increment(ref metrics.MissedRequestCount);
+                Console.WriteLine($"Error archiving {url}. {ex.Message}");
+                metrics.MissedRequestCount++;
             }
         }
 

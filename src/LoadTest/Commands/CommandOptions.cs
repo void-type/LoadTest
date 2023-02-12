@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 
 namespace LoadTest.Commands;
 
@@ -20,7 +20,7 @@ public static class CommandOptions
     {
         var pathOption = new Option<string>(
             name: "--path",
-            description: "URL list file path or sitemap URL.")
+            description: "URL to a sitemap or file path to a URL list. If file path ends in \".xml\", file is assumed a local copy of a sitemap.")
         {
             IsRequired = true,
             ArgumentHelpName = "file path or URL",
@@ -51,9 +51,7 @@ public static class CommandOptions
         var threadCountOption = new Option<int>(
             name: "--threads",
             getDefaultValue: () => 2,
-            description: "Number of concurrent threads to make requests.")
-        {
-        };
+            description: "Number of concurrent threads to make requests.");
 
         threadCountOption.AddAlias("-t");
 

@@ -1,5 +1,5 @@
-﻿using System.CommandLine;
-using LoadTest.Commands;
+﻿using LoadTest.Commands;
+using System.CommandLine;
 
 var rootCommand = new RootCommand(description: "Simple website load tester.");
 rootCommand.Name = "load-test";
