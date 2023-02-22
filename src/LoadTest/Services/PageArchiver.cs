@@ -30,7 +30,7 @@ public static class PageArchiver
 
         var seconds = elapsedTime.TotalMilliseconds / 1000;
         var safeSeconds = seconds == 0 ? 1 : seconds;
-        Console.WriteLine($"{urls.Length} requests in {elapsedTime} = {urls.Length / safeSeconds} RPS");
+        Console.WriteLine($"{urls.Length} requests in {elapsedTime} = {urls.Length / safeSeconds:F2} RPS");
 
         return 0;
     }
