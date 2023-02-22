@@ -45,7 +45,7 @@ public static class LoadTester
         var seconds = elapsedTime.TotalMilliseconds / 1000;
         var safeSeconds = seconds == 0 ? 1 : seconds;
 
-        Console.WriteLine($"{metrics.RequestCount} requests in {elapsedTime} = {metrics.RequestCount / safeSeconds} RPS");
+        Console.WriteLine($"{metrics.RequestCount} requests in {elapsedTime} = {metrics.RequestCount / safeSeconds:F2} RPS");
 
         var missedPercent = (double)metrics.MissedRequestCount / metrics.RequestCount * 100;
         Console.WriteLine($"{metrics.MissedRequestCount} unintended missed requests = {missedPercent:F2}%");
