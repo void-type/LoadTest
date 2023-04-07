@@ -23,7 +23,6 @@ public static class LoadTester
 
         using var client = new HttpClient();
 
-        // We're not using Parallel.Foreach here because we need to optionally run continually.
         var tasks = Enumerable
             .Range(0, config.ThreadCount)
             .Select(i => StartThread(i, urls, startTime, config, client))

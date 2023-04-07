@@ -40,16 +40,14 @@ public static class PageArchiver
         var metrics = new LoadTesterThreadMetrics();
 
         var uri = new Uri(url);
-        var uriSegments = uri.Segments.ToList();
 
         var baseFolder = config.OutputPath.TrimEnd('/', '\\');
 
-        var lastUriSegment = uriSegments.Last();
+        var lastUriSegment = uri.Segments[^1];
 
         var fileName = (lastUriSegment == "/" ? "index" : lastUriSegment) + ".html";
 
-        uriSegments.RemoveAt(uriSegments.Count - 1);
-        var folderPath = baseFolder + string.Concat(uriSegments);
+        var folderPath = baseFolder + string.Concat(uri.Segments[..^1]);
 
         var filePath = Path.Combine(folderPath, fileName);
 
