@@ -1,10 +1,10 @@
 # LoadTest
 
 [![License](https://img.shields.io/github/license/void-type/LoadTest.svg)](https://github.com/void-type/LoadTest/blob/main/LICENSE.txt)
-[![Build Status](https://img.shields.io/azure-devops/build/void-type/VoidCore/22.svg)](https://dev.azure.com/void-type/VoidCore/_build/latest?definitionId=22&branchName=main)
-[![Test Coverage](https://img.shields.io/azure-devops/coverage/void-type/VoidCore/22.svg)](https://dev.azure.com/void-type/VoidCore/_build/latest?definitionId=22&branchName=main)
 [![NuGet package](https://img.shields.io/nuget/v/Vt-loadtest.svg)](https://www.nuget.org/packages/vt-loadtest/)
 [![MyGet package](https://img.shields.io/myget/voidcoredev/vpre/vt-loadtest.svg?label=myget)](https://www.myget.org/feed/voidcoredev/package/nuget/vt-loadtest)
+[![Build Status](https://img.shields.io/azure-devops/build/void-type/VoidCore/22/main)](https://dev.azure.com/void-type/VoidCore/_build/latest?definitionId=22&branchName=main)
+[![Test Coverage](https://img.shields.io/azure-devops/coverage/void-type/VoidCore/22/main)](https://dev.azure.com/void-type/VoidCore/_build/latest?definitionId=22&branchName=main)
 
 [LoadTest](https://github.com/void-type/loadtest) is a simple website load tester packaged in a .NET tool. It's not fully-featured and is just a toy/tool for myself, but feel free to use it.
 
