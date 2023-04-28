@@ -73,10 +73,7 @@ public static class PageArchiver
                     Console.WriteLine($"Writing {content.Length} chars to {filePath}");
                 }
 
-                if (!Directory.Exists(folderPath))
-                {
-                    Directory.CreateDirectory(folderPath);
-                }
+                Directory.CreateDirectory(folderPath);
 
                 await File.WriteAllTextAsync(filePath, content);
             }
