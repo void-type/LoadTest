@@ -40,7 +40,6 @@ public static class LoadTester
         Console.WriteLine("Finished.");
 
         var elapsedTime = Stopwatch.GetElapsedTime(startTime);
-
         var seconds = elapsedTime.TotalMilliseconds / 1000;
         var safeSeconds = seconds == 0 ? 1 : seconds;
 
@@ -104,13 +103,10 @@ public static class LoadTester
                     break;
                 }
             }
-            else
+            else if (Stopwatch.GetElapsedTime(startTime).TotalMilliseconds >= config.SecondsToRun * 1000)
             {
-                if (Stopwatch.GetElapsedTime(startTime).TotalMilliseconds >= config.SecondsToRun * 1000)
-                {
-                    // Stop because time limit.
-                    break;
-                }
+                // Stop because time limit.
+                break;
             }
 
             // Get the next URL, looping around to beginning if at the end.
