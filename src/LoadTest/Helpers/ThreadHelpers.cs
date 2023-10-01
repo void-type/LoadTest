@@ -7,14 +7,15 @@ public static class ThreadHelpers
 {
     /// <summary>
     /// Get the starting and ending index of a block from a collection of items.
-    /// For example of 4 blocks out of 15 items: block 0 = (0, 3), 1 = (4, 7), 2 = (8, 11), 3 = (12, 15)
+    /// 99 items divided amongst 4 blocks nets 25 items per block, last block gets 24 items: block 0 = (0, 24), 1 = (25, 49), 2 = (50, 74), 3 = (75, 98)
+    /// Any block out of bounds will return (-1, -1).
     /// </summary>
     /// <param name="blockIndex">Index of the block of items from the collection. Zero based.</param>
     /// <param name="blockCount">How many blocks to divide the collection of items into.</param>
     /// <param name="totalCount">The total count of items in the collection.</param>
     public static (int firstIndex, int lastIndex) GetBlockStartAndEnd(int blockIndex, int blockCount, int totalCount)
     {
-        if (blockIndex >= blockCount)
+        if (blockIndex >= blockCount || blockIndex < 0)
         {
             return (-1, -1);
         }
@@ -26,7 +27,7 @@ public static class ThreadHelpers
                 (-1, -1);
         }
 
-        var blockSize = Convert.ToInt32(Math.Floor((double)totalCount / blockCount));
+        var blockSize = Convert.ToInt32(Math.Ceiling((double)totalCount / blockCount));
 
         var firstIndex = blockIndex * blockSize;
 

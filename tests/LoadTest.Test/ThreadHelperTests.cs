@@ -3,17 +3,13 @@ using LoadTest.Helpers;
 
 public class ThreadHelperTests
 {
+    /// <summary>
+    /// Block division
+    /// </summary>
     [Theory]
-    // Block division
     [InlineData(0, 10, 100, 0, 9)]
     [InlineData(9, 10, 100, 90, 99)]
-    [InlineData(9, 10, 101, 90, 100)]
-    // More blocks than items
-    [InlineData(9, 11, 10, 9, 9)]
-    [InlineData(10, 11, 10, -1, -1)]
-    // Block index out of range
-    [InlineData(12, 10, 10, -1, -1)]
-    [InlineData(12, 10, 11, -1, -1)]
+    [InlineData(9, 10, 101, 99, 100)]
     public void BlocksAreDividedAmongThreadCount(int blockIndex, int blockCount, int totalCount, int expectedFirst, int expectedLast)
     {
         (var firstIndex, var lastIndex) = ThreadHelpers.GetBlockStartAndEnd(blockIndex, blockCount, totalCount);
@@ -22,15 +18,48 @@ public class ThreadHelperTests
         Assert.Equal(expectedLast, lastIndex);
     }
 
+    /// <summary>
+    /// More blocks than items, one item each, then (-1, -1)
+    /// </summary>
     [Theory]
-    [InlineData(0, 0, 3)]
-    [InlineData(1, 4, 7)]
-    [InlineData(2, 8, 11)]
-    [InlineData(3, 12, 15)]
+    [InlineData(9, 11, 10, 9, 9)]
+    [InlineData(10, 11, 10, -1, -1)]
+    public void ExcessBlocksGivesSingleItemBlocks(int blockIndex, int blockCount, int totalCount, int expectedFirst, int expectedLast)
+    {
+        (var firstIndex, var lastIndex) = ThreadHelpers.GetBlockStartAndEnd(blockIndex, blockCount, totalCount);
+
+        Assert.Equal(expectedFirst, firstIndex);
+        Assert.Equal(expectedLast, lastIndex);
+    }
+
+    /// <summary>
+    /// Block index out of range gives (-1, -1)
+    /// </summary>
+    [Theory]
+    [InlineData(12, 10, 10, -1, -1)]
+    [InlineData(12, 10, 11, -1, -1)]
+    [InlineData(-1, 10, 10, -1, -1)]
+    public void OutOfRangeBlockGivesNegativeValues(int blockIndex, int blockCount, int totalCount, int expectedFirst, int expectedLast)
+    {
+        (var firstIndex, var lastIndex) = ThreadHelpers.GetBlockStartAndEnd(blockIndex, blockCount, totalCount);
+
+        Assert.Equal(expectedFirst, firstIndex);
+        Assert.Equal(expectedLast, lastIndex);
+    }
+
+    /// <summary>
+    /// 99 items divided amongst 4 blocks nets 25 items per block, last block gets 24 items: block 0 = (0, 24), 1 = (25, 49), 2 = (50, 74), 3 = (75, 98)
+    /// Any block out of bounds will return (-1, -1).
+    /// </summary>
+    [Theory]
+    [InlineData(0, 0, 24)]
+    [InlineData(1, 25, 49)]
+    [InlineData(2, 50, 74)]
+    [InlineData(3, 75, 98)]
     [InlineData(4, -1, -1)]
     public void BlocksAreDividedAsDescribedInDocs(int blockIndex, int expectedFirst, int expectedLast)
     {
-        (var firstIndex, var lastIndex) = ThreadHelpers.GetBlockStartAndEnd(blockIndex, 4, 16);
+        (var firstIndex, var lastIndex) = ThreadHelpers.GetBlockStartAndEnd(blockIndex, 4, 99);
 
         Assert.Equal(expectedFirst, firstIndex);
         Assert.Equal(expectedLast, lastIndex);
