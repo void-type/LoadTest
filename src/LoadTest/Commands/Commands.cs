@@ -45,7 +45,7 @@ public static class Commands
             };
 
             var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
-            var urls = await UrlsRetriever.GetUrls(path);
+            var urls = await UrlsRetriever.GetUrlsAsync(path);
 
             context.ExitCode = await LoadTester.RunLoadTestAsync(config, urls);
         });
@@ -68,7 +68,7 @@ public static class Commands
             var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
             var outputPath = context.GetValueForOptionEnsureNotNull(CommandOptions.OutputPathOption);
 
-            context.ExitCode = await UrlsRetriever.SaveUrls(path, outputPath);
+            context.ExitCode = await UrlsRetriever.SaveUrlsAsync(path, outputPath);
         });
 
         return makeListCommand;
@@ -76,12 +76,13 @@ public static class Commands
 
     private static Command BuildArchivePagesCommand()
     {
-        var archivePagesCommand = new Command("archive-pages", "Save the html from the request.")
+        var archivePagesCommand = new Command("archive-pages", "Save the html of pages.")
         {
             CommandOptions.PathOption,
             CommandOptions.OutputPathOption,
             CommandOptions.ThreadCountOption,
             CommandOptions.DelayOption,
+            CommandOptions.UseBrowserOption,
             CommandOptions.VerboseOption,
         };
 
@@ -94,13 +95,14 @@ public static class Commands
                 OutputPath = context.GetValueForOptionEnsureNotNull(CommandOptions.OutputPathOption),
                 ThreadCount = context.GetValueForOptionEnsureNotNull(CommandOptions.ThreadCountOption),
                 IsDelayEnabled = context.GetValueForOptionEnsureNotNull(CommandOptions.DelayOption),
+                UseBrowser = context.GetValueForOptionEnsureNotNull(CommandOptions.UseBrowserOption),
                 IsVerbose = context.GetValueForOptionEnsureNotNull(CommandOptions.VerboseOption),
             };
 
             var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
-            var urls = await UrlsRetriever.GetUrls(path);
+            var urls = await UrlsRetriever.GetUrlsAsync(path);
 
-            context.ExitCode = await PageArchiver.ShallowArchiveAsync(config, urls);
+            context.ExitCode = await PageArchiver.ArchiveHtmlAsync(config, urls, context.GetCancellationToken());
         });
 
         return archivePagesCommand;
