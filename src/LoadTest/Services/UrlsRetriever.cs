@@ -10,26 +10,26 @@ public static class UrlsRetriever
     /// <summary>
     /// Get URLs from a local file or local/remote sitemap.
     /// </summary>
-    public static async Task<string[]> GetUrls(string path)
+    public static async Task<string[]> GetUrlsAsync(string path)
     {
         return File.Exists(path) && !path.EndsWith(".xml")
-            ? await GetUrlsFromUrlListFile(path)
-            : await GetUrlsFromSitemapUrl(path);
+            ? await GetUrlsFromUrlListFileAsync(path)
+            : await GetUrlsFromSitemapUrlAsync(path);
     }
 
     /// <summary>
     /// Get URLs and save them to a local file.
     /// </summary>
-    public static async Task<int> SaveUrls(string path, string outputPath)
+    public static async Task<int> SaveUrlsAsync(string path, string outputPath)
     {
-        var urls = await GetUrls(path);
+        var urls = await GetUrlsAsync(path);
 
         Console.WriteLine($"Writing URLs to {outputPath}.");
         await File.WriteAllLinesAsync(outputPath, urls);
         return 0;
     }
 
-    private static async Task<string[]> GetUrlsFromUrlListFile(string filePath)
+    private static async Task<string[]> GetUrlsFromUrlListFileAsync(string filePath)
     {
         Console.WriteLine("Getting URLs from file.");
         return (await File.ReadAllLinesAsync(filePath))
@@ -37,22 +37,22 @@ public static class UrlsRetriever
             .ToArray();
     }
 
-    private static async Task<string[]> GetUrlsFromSitemapUrl(string sitemapUrl)
+    private static async Task<string[]> GetUrlsFromSitemapUrlAsync(string sitemapUrl)
     {
         Console.WriteLine("Getting URLs from sitemap.");
 
-        var urls = await GetUrlsFromSitemapRecursive(sitemapUrl);
+        var urls = await GetUrlsFromSitemapRecursiveAsync(sitemapUrl);
 
         return urls
             .Distinct()
             .ToArray();
     }
 
-    private static async Task<List<string>> GetUrlsFromSitemapRecursive(string sitemapUrl)
+    private static async Task<List<string>> GetUrlsFromSitemapRecursiveAsync(string sitemapUrl)
     {
         try
         {
-            var xml = await GetSitemapXml(sitemapUrl);
+            var xml = await GetSitemapXmlAsync(sitemapUrl);
 
             var urls = new List<string>();
 
@@ -84,7 +84,7 @@ public static class UrlsRetriever
             foreach (var childSitemapUrl in childSitemapUrls)
             {
                 Console.WriteLine($"Following child sitemap at {childSitemapUrl}.");
-                urls.AddRange(await GetUrlsFromSitemapRecursive(childSitemapUrl));
+                urls.AddRange(await GetUrlsFromSitemapRecursiveAsync(childSitemapUrl));
             }
 
             return urls;
@@ -107,7 +107,7 @@ public static class UrlsRetriever
     /// Can get XML from a file or URL.
     /// </summary>
     /// <param name="sitemapUrl"></param>
-    private static async Task<XElement> GetSitemapXml(string sitemapUrl)
+    private static async Task<XElement> GetSitemapXmlAsync(string sitemapUrl)
     {
         var xmlString = File.Exists(sitemapUrl) ?
             await File.ReadAllTextAsync(sitemapUrl) :

@@ -6,55 +6,67 @@ namespace LoadTest.Services;
 public static class PageArchiver
 {
     /// <summary>
-    /// Saves a shallow copy of the page HTML.
+    /// Saves a copy of the page HTML.
     /// </summary>
-    public static async Task<int> ShallowArchiveAsync(PageArchiverConfiguration config, string[] urls)
+    public static async Task<int> ArchiveHtmlAsync(PageArchiverConfiguration config, string[] urls, CancellationToken cancellationToken)
     {
-        if (urls.Length == 0)
+        try
         {
-            Console.WriteLine("No URLs found. Exiting.");
+            if (urls.Length == 0)
+            {
+                Console.WriteLine("No URLs found. Exiting.");
+                return 1;
+            }
+
+            Console.WriteLine("Performing HTML archive. Press Ctrl+C to stop.");
+
+            var startTime = Stopwatch.GetTimestamp();
+
+            using var client = new HtmlContentRetriever(config);
+            await client.Init();
+
+            var tasks = Enumerable
+                .Range(0, config.ThreadCount)
+                .Select(i => StartThreadAsync(i, urls, config, client, cancellationToken))
+                .ToArray();
+
+            var metricCollection = await Task.WhenAll(tasks);
+
+            var metrics = metricCollection.Aggregate(new LoadTesterThreadMetrics(), (acc, x) =>
+            {
+                acc.RequestCount += x.RequestCount;
+                acc.MissedRequestCount += x.MissedRequestCount;
+                return acc;
+            });
+
+            Console.WriteLine("Finished.");
+
+            var elapsedTime = Stopwatch.GetElapsedTime(startTime);
+            var seconds = elapsedTime.TotalMilliseconds / 1000;
+            var safeSeconds = seconds == 0 ? 1 : seconds;
+
+            Console.WriteLine($"{metrics.RequestCount} requests in {elapsedTime} = {metrics.RequestCount / safeSeconds:F2} RPS");
+
+            var missedPercent = (double)metrics.MissedRequestCount / metrics.RequestCount * 100;
+            Console.WriteLine($"{metrics.MissedRequestCount} unintended missed requests = {missedPercent:F2}%");
+
+            return 0;
+        }
+        catch
+        {
+            // This handles our cancellation requests and closes the scope to dispose of HtmlContentRetriever.
             return 1;
         }
-
-        Console.WriteLine("Performing shallow archive. Press Ctrl+C to stop.");
-
-        var startTime = Stopwatch.GetTimestamp();
-
-        using var client = new HttpClient();
-
-        var tasks = Enumerable
-            .Range(0, config.ThreadCount)
-            .Select(i => StartThread(i, urls, config, client))
-            .ToArray();
-
-        var metricCollection = await Task.WhenAll(tasks);
-
-        var metrics = metricCollection.Aggregate(new LoadTesterThreadMetrics(), (acc, x) =>
-        {
-            acc.RequestCount += x.RequestCount;
-            acc.MissedRequestCount += x.MissedRequestCount;
-            return acc;
-        });
-
-        Console.WriteLine("Finished.");
-
-        var elapsedTime = Stopwatch.GetElapsedTime(startTime);
-        var seconds = elapsedTime.TotalMilliseconds / 1000;
-        var safeSeconds = seconds == 0 ? 1 : seconds;
-
-        Console.WriteLine($"{metrics.RequestCount} requests in {elapsedTime} = {metrics.RequestCount / safeSeconds:F2} RPS");
-
-        var missedPercent = (double)metrics.MissedRequestCount / metrics.RequestCount * 100;
-        Console.WriteLine($"{metrics.MissedRequestCount} unintended missed requests = {missedPercent:F2}%");
-
-        return 0;
     }
 
-    private static async Task<LoadTesterThreadMetrics> StartThread(int threadNumber, string[] urls, PageArchiverConfiguration config, HttpClient client)
+    private static async Task<LoadTesterThreadMetrics> StartThreadAsync(int threadNumber, string[] urls, PageArchiverConfiguration config, HtmlContentRetriever client, CancellationToken cancellationToken)
     {
         (var initialUrlIndex, var stopUrlIndex) = ThreadHelpers.GetBlockStartAndEnd(threadNumber, config.ThreadCount, urls.Length);
 
-        var metrics = new LoadTesterThreadMetrics();
+        var metrics = new LoadTesterThreadMetrics()
+        {
+            ThreadNumber = threadNumber
+        };
 
         if (initialUrlIndex == -1)
         {
@@ -66,6 +78,8 @@ public static class PageArchiver
 
         while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var url = urls[urlIndex];
 
             var uri = new Uri(url);
@@ -84,18 +98,9 @@ public static class PageArchiver
             {
                 try
                 {
-                    var response = await client.GetAsync(url);
+                    var content = await client.GetContentAsync(url, metrics, cancellationToken);
 
-                    metrics.RequestCount++;
-
-                    response.EnsureSuccessStatusCode();
-
-                    if (config.IsVerbose)
-                    {
-                        Console.WriteLine($"{response.StatusCode} {url}");
-                    }
-
-                    var content = await response.Content.ReadAsStringAsync();
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (config.IsVerbose)
                     {
@@ -104,7 +109,11 @@ public static class PageArchiver
 
                     Directory.CreateDirectory(folderPath);
 
-                    await File.WriteAllTextAsync(filePath, content);
+                    await File.WriteAllTextAsync(filePath, content, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -124,7 +133,7 @@ public static class PageArchiver
 
             if (config.IsDelayEnabled)
             {
-                await Task.Delay(500);
+                await Task.Delay(500, cancellationToken);
             }
         }
 

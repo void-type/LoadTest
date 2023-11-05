@@ -25,7 +25,7 @@ public static class LoadTester
 
         var tasks = Enumerable
             .Range(0, config.ThreadCount)
-            .Select(i => StartThread(i, urls, startTime, config, client))
+            .Select(i => StartThreadAsync(i, urls, startTime, config, client))
             .ToArray();
 
         var metricCollection = await Task.WhenAll(tasks);
@@ -51,11 +51,14 @@ public static class LoadTester
         return 0;
     }
 
-    private static async Task<LoadTesterThreadMetrics> StartThread(int threadNumber, string[] urls, long startTime, LoadTesterConfiguration config, HttpClient client)
+    private static async Task<LoadTesterThreadMetrics> StartThreadAsync(int threadNumber, string[] urls, long startTime, LoadTesterConfiguration config, HttpClient client)
     {
         (var initialUrlIndex, var stopUrlIndex) = ThreadHelpers.GetBlockStartAndEnd(threadNumber, config.ThreadCount, urls.Length);
 
-        var metrics = new LoadTesterThreadMetrics();
+        var metrics = new LoadTesterThreadMetrics()
+        {
+            ThreadNumber = threadNumber
+        };
 
         if (initialUrlIndex == -1)
         {
