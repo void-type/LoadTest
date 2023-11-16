@@ -44,4 +44,4 @@ vt-loadtest run --path './samples/sitemapUrls.txt' --chance-404 20
 vt-loadtest make-list --path 'https://developers.google.com/sitemap.xml' --output './samples/url-list.txt'
 ```
 
-See the `--help` for more.
+See `vt-loadtest -h` for more.
