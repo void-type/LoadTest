@@ -9,7 +9,7 @@ public static class LoadTester
     /// <summary>
     /// Request URLs and log metrics.
     /// </summary>
-    public static async Task<int> RunLoadTestAsync(LoadTesterConfiguration config, string[] urls)
+    public static async Task<int> RunLoadTestAsync(LoadTesterConfiguration config, string[] urls, CancellationToken cancellationToken)
     {
         if (urls.Length == 0)
         {
@@ -25,7 +25,7 @@ public static class LoadTester
 
         var tasks = Enumerable
             .Range(0, config.ThreadCount)
-            .Select(i => StartThreadAsync(i, urls, startTime, config, client))
+            .Select(i => StartThreadAsync(i, urls, startTime, config, client, cancellationToken))
             .ToArray();
 
         var metricCollection = await Task.WhenAll(tasks);
@@ -51,7 +51,7 @@ public static class LoadTester
         return 0;
     }
 
-    private static async Task<LoadTesterThreadMetrics> StartThreadAsync(int threadNumber, string[] urls, long startTime, LoadTesterConfiguration config, HttpClient client)
+    private static async Task<LoadTesterThreadMetrics> StartThreadAsync(int threadNumber, string[] urls, long startTime, LoadTesterConfiguration config, HttpClient client, CancellationToken cancellationToken)
     {
         (var initialUrlIndex, var stopUrlIndex) = ThreadHelpers.GetBlockStartAndEnd(threadNumber, config.ThreadCount, urls.Length);
 
@@ -71,54 +71,66 @@ public static class LoadTester
         // Start in a different spot per-thread.
         var urlIndex = initialUrlIndex;
 
-        while (true)
+        try
         {
-            var url = urls[urlIndex];
-            var shouldForce404 = config.ChanceOf404 >= 100 || (config.ChanceOf404 > 0 && RandomNumberGenerator.GetInt32(0, 100) < config.ChanceOf404);
-
-            if (shouldForce404)
+            while (true)
             {
-                url += Guid.NewGuid().ToString();
-            }
+                var url = urls[urlIndex];
+                var shouldForce404 = config.ChanceOf404 >= 100 || (config.ChanceOf404 > 0 && RandomNumberGenerator.GetInt32(0, 100) < config.ChanceOf404);
 
-            var request = new HttpRequestMessage(config.RequestMethod, url);
-            var response = await client.SendAsync(request);
-
-            metrics.RequestCount++;
-
-            var isUnintendedMiss = response.StatusCode == System.Net.HttpStatusCode.NotFound && !shouldForce404;
-
-            if (isUnintendedMiss)
-            {
-                metrics.MissedRequestCount++;
-            }
-
-            if (config.IsVerbose || isUnintendedMiss)
-            {
-                Console.WriteLine($"{response.StatusCode} {url}");
-            }
-
-            if (shouldHitAllUrlsOnce)
-            {
-                if (urlIndex == stopUrlIndex)
+                if (shouldForce404)
                 {
-                    // Stop because we hit all the URLs once.
+                    url += Guid.NewGuid().ToString();
+                }
+
+                var request = new HttpRequestMessage(config.RequestMethod, url);
+                var response = await client.SendAsync(request, cancellationToken);
+
+                metrics.RequestCount++;
+
+                var isUnintendedMiss = response.StatusCode == System.Net.HttpStatusCode.NotFound && !shouldForce404;
+
+                if (isUnintendedMiss)
+                {
+                    metrics.MissedRequestCount++;
+                }
+
+                if (config.IsVerbose || isUnintendedMiss)
+                {
+                    Console.WriteLine($"{response.StatusCode} {url}");
+                }
+
+                if (shouldHitAllUrlsOnce)
+                {
+                    if (urlIndex == stopUrlIndex)
+                    {
+                        // Stop because we hit all the URLs once.
+                        break;
+                    }
+                }
+                else if (Stopwatch.GetElapsedTime(startTime).TotalMilliseconds >= config.SecondsToRun * 1000)
+                {
+                    // Stop because time limit.
                     break;
                 }
-            }
-            else if (Stopwatch.GetElapsedTime(startTime).TotalMilliseconds >= config.SecondsToRun * 1000)
-            {
-                // Stop because time limit.
-                break;
-            }
 
-            // Get the next URL, looping around to beginning if at the end.
-            urlIndex = (urlIndex + 1) % urls.Length;
+                // Get the next URL, looping around to beginning if at the end.
+                urlIndex = (urlIndex + 1) % urls.Length;
 
-            if (config.IsDelayEnabled)
-            {
-                await Task.Delay(500);
+                if (config.IsDelayEnabled)
+                {
+                    await Task.Delay(500, cancellationToken);
+                }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // ignore
+        }
+
+        if (config.IsVerbose)
+        {
+            Console.WriteLine($"Thread {metrics.ThreadNumber} ending.");
         }
 
         return metrics;

@@ -1,5 +1,6 @@
 ﻿using LoadTest.Helpers;
 using System.Diagnostics;
+using VoidCore.Model.Text;
 
 namespace LoadTest.Services;
 
@@ -76,67 +77,98 @@ public static class PageArchiver
         // Start in a different spot per-thread.
         var urlIndex = initialUrlIndex;
 
-        while (true)
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var url = urls[urlIndex];
-
-            var uri = new Uri(url);
-
-            var baseFolder = config.OutputPath.TrimEnd('/', '\\');
-
-            var lastUriSegment = uri.Segments[^1];
-
-            var fileName = (lastUriSegment == "/" ? "index" : lastUriSegment) + ".html";
-
-            var folderPath = baseFolder + string.Concat(uri.Segments[..^1]);
-
-            var filePath = Path.Combine(folderPath, fileName);
-
-            if (!File.Exists(filePath))
+            while (true)
             {
-                try
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var url = urls[urlIndex];
+
+                var uri = new Uri(url);
+
+                var baseFolder = config.OutputPath.TrimEnd('/', '\\');
+
+                var lastUriSegment = uri.Segments[^1];
+
+                var fileName = GetFileName(lastUriSegment);
+
+                var folderPath = GetFolderPath(uri, baseFolder);
+
+                var filePath = Path.Combine(folderPath, fileName);
+
+                if (!File.Exists(filePath))
                 {
-                    var content = await client.GetContentAsync(url, metrics, cancellationToken);
-
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    if (config.IsVerbose)
+                    try
                     {
-                        Console.WriteLine($"Writing {content.Length} chars to {filePath}");
+                        metrics.RequestCount++;
+
+                        var content = await client.GetContentAsync(url, metrics, cancellationToken);
+
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        if (config.IsVerbose)
+                        {
+                            Console.WriteLine($"Writing {content.Length} chars to {filePath}");
+                        }
+
+                        Directory.CreateDirectory(folderPath);
+
+                        await File.WriteAllTextAsync(filePath, content, cancellationToken);
                     }
-
-                    Directory.CreateDirectory(folderPath);
-
-                    await File.WriteAllTextAsync(filePath, content, cancellationToken);
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error archiving {url}. {ex.Message}");
+                        metrics.MissedRequestCount++;
+                    }
                 }
-                catch (OperationCanceledException)
+
+                if (urlIndex == stopUrlIndex)
                 {
-                    throw;
+                    // Stop because we hit all the URLs once.
+                    break;
                 }
-                catch (Exception ex)
+
+                // Get the next URL, looping around to beginning if at the end.
+                urlIndex++;
+
+                if (config.IsDelayEnabled)
                 {
-                    Console.WriteLine($"Error archiving {url}. {ex.Message}");
-                    metrics.MissedRequestCount++;
+                    await Task.Delay(500, cancellationToken);
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // ignore
+        }
 
-            if (urlIndex == stopUrlIndex)
-            {
-                // Stop because we hit all the URLs once.
-                break;
-            }
-
-            // Get the next URL, looping around to beginning if at the end.
-            urlIndex++;
-
-            if (config.IsDelayEnabled)
-            {
-                await Task.Delay(500, cancellationToken);
-            }
+        if (config.IsVerbose)
+        {
+            Console.WriteLine($"Thread {metrics.ThreadNumber} ending.");
         }
 
         return metrics;
+    }
+
+    private static string GetFolderPath(Uri uri, string baseFolder)
+    {
+        return baseFolder + string.Concat(uri.Segments[..^1]).GetSafeFilePath();
+    }
+
+    private static string GetFileName(string lastUriSegment)
+    {
+        if (lastUriSegment.IsNullOrWhiteSpace() || lastUriSegment == "/")
+        {
+            lastUriSegment = "index";
+        }
+
+        lastUriSegment = lastUriSegment.TrimEnd('/');
+
+        return (lastUriSegment + ".html").GetSafeFileName();
     }
 }

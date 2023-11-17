@@ -43,6 +43,14 @@ public class HtmlContentRetriever : IDisposable
 
         using var page = await Browser.NewPageAsync();
 
+        page.PageError += (sender, eventArgs) =>
+        {
+            if (_config.LogBrowserConsoleError)
+            {
+                Console.WriteLine($"Browser console error on {url}: {eventArgs.Message}");
+            }
+        };
+
         var response = await page.GoToAsync(url);
 
         metrics.RequestCount++;

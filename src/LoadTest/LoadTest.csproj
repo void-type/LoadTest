@@ -2,13 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
-    <RollForward>Major</RollForward>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-
     <PackAsTool>true</PackAsTool>
-    <PackageOutputPath>../../artifacts/dist</PackageOutputPath>
     <Title>vt-loadtest</Title>
     <Description>This is a simple website load tester. It's not fully-featured and is just a toy/tool for myself, but feel free to use it.</Description>
     <AssemblyName>vt-loadtest</AssemblyName>
@@ -17,31 +11,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AsyncFixer" Version="1.6.0">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <!-- <PackageReference Include="spectre.console" Version="0.44.0" /> -->
-    <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.133">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="PuppeteerSharp" Version="12.0.0" />
-    <PackageReference Include="Roslynator.Analyzers" Version="4.6.1">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="9.12.0.78982">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="VoidCore.Model" Version="12.0.3" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="\" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
-    <None Include="..\..\docs\*.md" Pack="true" PackagePath="\docs" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -54,8 +31,6 @@
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- TODO: Broken in .NET SDK 7.0.200 https://github.com/dotnet/format/issues/1800 -->
-    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 

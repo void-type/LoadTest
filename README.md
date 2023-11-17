@@ -26,6 +26,13 @@ You need the [.NET SDK](https://dot.net/download) to build this project.
 ./build/build.ps1
 ```
 
+To install a local build:
+
+```powershell
+dotnet tool uninstall -g vt-loadtest
+dotnet tool install -g vt-loadtest --add-source ./artifacts/dist/pre-release
+```
+
 ## Usage
 
 If running from source, replace `vt-loadtest` with `dotnet run --`.
@@ -45,3 +52,7 @@ vt-loadtest make-list --path 'https://developers.google.com/sitemap.xml' --outpu
 ```
 
 See `vt-loadtest -h` for more.
+
+## Known issues
+
+URLs are technically case-sensitive, but some file systems aren't (Windows). This means when archiving pages, you may only get one page or the other in the event that the web server treats them as 2 different URLs (which is bad for SEO).

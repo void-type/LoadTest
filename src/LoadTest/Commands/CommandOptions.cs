@@ -14,7 +14,8 @@ public static class CommandOptions
         DelayOption = BuildDelayOption();
         VerboseOption = BuildVerboseOption();
         RequestMethodOption = BuildRequestMethodOption();
-        UseBrowserOption = BuildBrowserOption();
+        UseBrowserOption = BuildUseBrowserOption();
+        LogBrowserConsoleError = BuildLogBrowserConsoleErrorOption();
     }
 
     private static Option<string> BuildPathOption()
@@ -150,13 +151,24 @@ public static class CommandOptions
         return requestMethodOption;
     }
 
-    private static Option<bool> BuildBrowserOption()
+    private static Option<bool> BuildUseBrowserOption()
     {
         var delayOption = new Option<bool>(
             name: "--browser",
             description: "Use browser (Puppeteer) to fully render pages, including JS.");
 
         delayOption.AddAlias("-b");
+
+        return delayOption;
+    }
+
+    private static Option<bool> BuildLogBrowserConsoleErrorOption()
+    {
+        var delayOption = new Option<bool>(
+            name: "--log-browser-errors",
+            description: "Log browser console errors.");
+
+        delayOption.AddAlias("-be");
 
         return delayOption;
     }
@@ -170,4 +182,5 @@ public static class CommandOptions
     public static Option<bool> VerboseOption { get; }
     public static Option<string> RequestMethodOption { get; }
     public static Option<bool> UseBrowserOption { get; }
+    public static Option<bool> LogBrowserConsoleError { get; }
 }

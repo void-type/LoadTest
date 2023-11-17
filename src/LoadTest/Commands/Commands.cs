@@ -45,9 +45,9 @@ public static class Commands
             };
 
             var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
-            var urls = await UrlsRetriever.GetUrlsAsync(path);
+            var urls = await UrlsRetriever.GetUrlsAsync(path, context.GetCancellationToken());
 
-            context.ExitCode = await LoadTester.RunLoadTestAsync(config, urls);
+            context.ExitCode = await LoadTester.RunLoadTestAsync(config, urls, context.GetCancellationToken());
         });
 
         return runCommand;
@@ -68,7 +68,7 @@ public static class Commands
             var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
             var outputPath = context.GetValueForOptionEnsureNotNull(CommandOptions.OutputPathOption);
 
-            context.ExitCode = await UrlsRetriever.SaveUrlsAsync(path, outputPath);
+            context.ExitCode = await UrlsRetriever.SaveUrlsAsync(path, outputPath, context.GetCancellationToken());
         });
 
         return makeListCommand;
@@ -83,6 +83,7 @@ public static class Commands
             CommandOptions.ThreadCountOption,
             CommandOptions.DelayOption,
             CommandOptions.UseBrowserOption,
+            CommandOptions.LogBrowserConsoleError,
             CommandOptions.VerboseOption,
         };
 
@@ -96,11 +97,12 @@ public static class Commands
                 ThreadCount = context.GetValueForOptionEnsureNotNull(CommandOptions.ThreadCountOption),
                 IsDelayEnabled = context.GetValueForOptionEnsureNotNull(CommandOptions.DelayOption),
                 UseBrowser = context.GetValueForOptionEnsureNotNull(CommandOptions.UseBrowserOption),
+                LogBrowserConsoleError = context.GetValueForOptionEnsureNotNull(CommandOptions.LogBrowserConsoleError),
                 IsVerbose = context.GetValueForOptionEnsureNotNull(CommandOptions.VerboseOption),
             };
 
             var path = context.GetValueForOptionEnsureNotNull(CommandOptions.PathOption);
-            var urls = await UrlsRetriever.GetUrlsAsync(path);
+            var urls = await UrlsRetriever.GetUrlsAsync(path, context.GetCancellationToken());
 
             context.ExitCode = await PageArchiver.ArchiveHtmlAsync(config, urls, context.GetCancellationToken());
         });
