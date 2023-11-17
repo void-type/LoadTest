@@ -30,7 +30,7 @@ To install a local build:
 
 ```powershell
 dotnet tool uninstall -g vt-loadtest
-dotnet tool install -g vt-loadtest --add-source ./artifacts/dist/pre-release
+dotnet tool install -g vt-loadtest --add-source ./artifacts/dist/pre-release --prerelease
 ```
 
 ## Usage
