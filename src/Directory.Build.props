@@ -15,8 +15,4 @@
     <PackageReference Include="SecurityCodeScan.VS2019" Version="5.6.7" PrivateAssets="all" />
     <PackageReference Include="AsyncFixer" Version="1.6.0" PrivateAssets="all" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="$(PackageLicenseFile)" CopyToPublishDirectory="Always" />
-  </ItemGroup>
 </Project>
