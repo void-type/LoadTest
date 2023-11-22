@@ -8,6 +8,12 @@
 
 [LoadTest](https://github.com/void-type/loadtest) is a simple website load tester packaged in a .NET tool. It's not fully-featured and is just a toy/tool for myself, but feel free to use it.
 
+- Load test a site using a list of URLs or point to the sitemap.
+- Save a list of URLs from the sitemap.
+- Archive html from pages.
+  - Save html source or use --browser to save the JS-rendered page markup.
+  - Use --log-browser-errors to capture JS console errors to QA your site.
+
 ## Install
 
 You need the [.NET SDK](https://dot.net/download) to run this tool.
@@ -55,4 +61,4 @@ See `vt-loadtest -h` for more.
 
 ## Known issues
 
-URLs are technically case-sensitive, but some file systems aren't (Windows). This means when archiving pages, you may only get one page or the other in the event that the web server treats them as 2 different URLs (which is bad for SEO).
+URLs are technically case-sensitive, but some file systems aren't (Windows). This means when archiving pages, you may only get one page or the other in the event that the web server treats them as 2 different URLs. This should be rare as nearly identical URLs are bad for SEO.
