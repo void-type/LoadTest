@@ -40,7 +40,14 @@ public static class PageArchiver
                 return acc;
             });
 
-            Console.WriteLine("Finished.");
+            if (cancellationToken.IsCancellationRequested)
+            {
+                Console.WriteLine("Cancelled.");
+            }
+            else
+            {
+                Console.WriteLine("Finished.");
+            }
 
             var elapsedTime = Stopwatch.GetElapsedTime(startTime);
             var seconds = elapsedTime.TotalMilliseconds / 1000;
