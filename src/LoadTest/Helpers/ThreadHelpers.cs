@@ -22,19 +22,31 @@ public static class ThreadHelpers
 
         if (blockCount > totalCount)
         {
-            return blockIndex < totalCount ?
-                (blockIndex, blockIndex) :
-                (-1, -1);
+            return blockIndex < totalCount ? (blockIndex, blockIndex) : (-1, -1);
         }
 
         var blockSize = Convert.ToInt32(Math.Ceiling((double)totalCount / blockCount));
 
         var firstIndex = blockIndex * blockSize;
 
+        // If the firstIndex is on the edge, check to see if the last item included it.
+        if (firstIndex >= totalCount - 1)
+        {
+            var (_, lastLastIndex) = GetBlockStartAndEnd(blockIndex - 1, blockCount, totalCount);
+
+            // If the last item included it, then this block is out of bounds.
+            if (lastLastIndex >= totalCount - 1 || lastLastIndex == -1)
+            {
+                return (-1, -1);
+            }
+
+            firstIndex = Math.Min(firstIndex, totalCount - 1);
+        }
+
         // If the last block, then include the last item, else go to the end of this block.
-        var lastIndex = blockIndex == blockCount - 1 ?
-            totalCount - 1 :
-            (blockSize * (blockIndex + 1)) - 1;
+        var lastIndex = blockIndex == blockCount - 1
+            ? totalCount - 1
+            : Math.Min((blockSize * (blockIndex + 1)) - 1, totalCount - 1);
 
         return (firstIndex, lastIndex);
     }

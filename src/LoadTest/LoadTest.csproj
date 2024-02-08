@@ -11,9 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="PuppeteerSharp" Version="12.0.0" />
+    <PackageReference Include="PuppeteerSharp" Version="14.0.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
-    <PackageReference Include="VoidCore.Model" Version="12.0.3" />
+    <PackageReference Include="VoidCore.Model" Version="12.1.2" />
   </ItemGroup>
 
   <ItemGroup>

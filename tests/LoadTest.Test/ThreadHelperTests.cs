@@ -64,4 +64,58 @@ public class ThreadHelperTests
         Assert.Equal(expectedFirst, firstIndex);
         Assert.Equal(expectedLast, lastIndex);
     }
+
+    [Theory]
+    [InlineData(0, 0, 3)]
+    [InlineData(1, 4, 7)]
+    [InlineData(2, 8, 11)]
+    [InlineData(3, 12, 15)]
+    [InlineData(4, 16, 19)]
+    [InlineData(5, 20, 23)]
+    [InlineData(6, 24, 26)]
+    [InlineData(7, -1, -1)]
+    [InlineData(8, -1, -1)]
+    public void BlocksAreDividedAsDescribedInDocs2(int blockIndex, int expectedFirst, int expectedLast)
+    {
+        (var firstIndex, var lastIndex) = ThreadHelpers.GetBlockStartAndEnd(blockIndex, 8, 27);
+
+        Assert.Equal(expectedFirst, firstIndex);
+        Assert.Equal(expectedLast, lastIndex);
+    }
+
+    [Theory]
+    [InlineData(0, 0, 3)]
+    [InlineData(1, 4, 7)]
+    [InlineData(2, 8, 11)]
+    [InlineData(3, 12, 15)]
+    [InlineData(4, 16, 19)]
+    [InlineData(5, 20, 23)]
+    [InlineData(6, 24, 27)]
+    [InlineData(7, -1, -1)]
+    [InlineData(8, -1, -1)]
+    public void BlocksAreDividedAsDescribedInDocs3(int blockIndex, int expectedFirst, int expectedLast)
+    {
+        (var firstIndex, var lastIndex) = ThreadHelpers.GetBlockStartAndEnd(blockIndex, 8, 28);
+
+        Assert.Equal(expectedFirst, firstIndex);
+        Assert.Equal(expectedLast, lastIndex);
+    }
+
+    [Theory]
+    [InlineData(0, 0, 3)]
+    [InlineData(1, 4, 7)]
+    [InlineData(2, 8, 11)]
+    [InlineData(3, 12, 15)]
+    [InlineData(4, 16, 19)]
+    [InlineData(5, 20, 23)]
+    [InlineData(6, 24, 27)]
+    [InlineData(7, 28, 28)]
+    [InlineData(8, -1, -1)]
+    public void BlocksAreDividedAsDescribedInDocs4(int blockIndex, int expectedFirst, int expectedLast)
+    {
+        (var firstIndex, var lastIndex) = ThreadHelpers.GetBlockStartAndEnd(blockIndex, 8, 29);
+
+        Assert.Equal(expectedFirst, firstIndex);
+        Assert.Equal(expectedLast, lastIndex);
+    }
 }
