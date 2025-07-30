@@ -3,22 +3,25 @@
   "isRoot": true,
   "tools": {
     "dotnet-reportgenerator-globaltool": {
-      "version": "5.2.1",
+      "version": "5.4.11",
       "commands": [
         "reportgenerator"
-      ]
+      ],
+      "rollForward": false
     },
     "nbgv": {
-      "version": "3.6.133",
+      "version": "3.7.115",
       "commands": [
         "nbgv"
-      ]
+      ],
+      "rollForward": false
     },
     "dotnet-outdated-tool": {
-      "version": "4.6.0",
+      "version": "4.6.8",
       "commands": [
         "dotnet-outdated"
-      ]
+      ],
+      "rollForward": false
     }
   }
 }

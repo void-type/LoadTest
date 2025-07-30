@@ -1,25 +1,165 @@
-﻿using PuppeteerSharp;
+﻿using LoadTest.Helpers;
+using LoadTest.Models;
+using PuppeteerSharp;
 
 namespace LoadTest.Services;
 
 public class HtmlContentRetriever : IDisposable
 {
-    private HttpClient? _httpClient;
+    private readonly HttpClient _httpClient;
+    private readonly SemaphoreSlim _semaphore = new(1);
     private IBrowser? _browser;
-    private readonly PageArchiverConfiguration _config;
     private bool _disposedValue;
 
-    public HtmlContentRetriever(PageArchiverConfiguration config)
+    public HtmlContentRetriever(HttpClient httpClient)
     {
-        _config = config;
+        _httpClient = httpClient;
     }
 
-    public async Task Init()
+    public async Task<HtmlContentRetrieverResult> GetContentAsync(PageArchiveOptions config, Uri uri, CancellationToken cancellationToken)
     {
-        using var browserFetcher = new BrowserFetcher();
+        return config.UseBrowser ?
+            await GetBrowserContentAsync(config, uri, cancellationToken) :
+            await GetServerContentAsync(config, uri, cancellationToken);
+    }
+
+    private async Task<HtmlContentRetrieverResult> GetBrowserContentAsync(PageArchiveOptions config, Uri uri, CancellationToken cancellationToken)
+    {
+        var result = new HtmlContentRetrieverResult();
+
+        try
+        {
+            var browser = await EnsureBrowserAsync(config, cancellationToken);
+
+            await using var page = await browser.NewPageAsync();
+
+            page.PageError += (sender, eventArgs) =>
+            {
+                if (config.LogBrowserConsoleErrors)
+                {
+                    Console.WriteLine($"Browser console error on {uri.OriginalString}: {eventArgs.Message}");
+                }
+            };
+
+            var response = await page.GoToAsync(uri.OriginalString);
+
+            var isSuccess = response.IsSuccessStatusCode();
+            var isHtml = response.Headers["content-type"]?.Contains("text/html", StringComparison.OrdinalIgnoreCase) ?? false;
+
+            if (config.IsVerbose)
+            {
+                Console.WriteLine($"{response.Status} {uri.OriginalString} - IsHtml: {isHtml}");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Wait for JS to render (you may need to adjust the wait time)
+            // Alternatively, you could listen for JavaScript event if you can make the app emit one when it's done with initial rendering.
+            await Task.Delay(100, cancellationToken);
+
+            result.FinalUrl = response.Url.GetNormalizedUri(config.PrimaryDomain, config.PrimaryDomainEquivalents, uri.ToString());
+            result.StatusCode = (int)response.Status;
+            result.IsRetrieveError = !(isHtml && isSuccess);
+
+            if (result.IsRetrieveError)
+            {
+                Console.WriteLine($"Failed to retrieve HTML content for {uri.OriginalString}. StatusCode: {response.Status}, IsHtml: {isHtml}");
+            }
+            else
+            {
+                result.HtmlContent = await page.GetContentAsync();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            result.IsRetrieveError = true;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving HTML content for {uri.OriginalString}: {ex.Message}");
+            result.IsRetrieveError = true;
+        }
+
+        return result;
+    }
+
+    private async Task<HtmlContentRetrieverResult> GetServerContentAsync(PageArchiveOptions config, Uri uri, CancellationToken cancellationToken)
+    {
+        var result = new HtmlContentRetrieverResult();
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+            if (!string.IsNullOrWhiteSpace(config.UserAgent))
+            {
+                request.Headers.Add("User-Agent", config.UserAgent);
+            }
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+
+            var isSuccess = response.IsSuccessStatusCode();
+            var isHtml = response.Content.Headers.ContentType?.MediaType?.Equals("text/html", StringComparison.OrdinalIgnoreCase) ?? false;
+
+            if (config.IsVerbose)
+            {
+                Console.WriteLine($"{response.StatusCode} {uri.OriginalString} - IsHtml: {isHtml}");
+            }
+
+            result.FinalUrl = response.RequestMessage?.RequestUri?.OriginalString
+                .GetNormalizedUri(config.PrimaryDomain, config.PrimaryDomainEquivalents, uri.ToString());
+            result.StatusCode = (int)response.StatusCode;
+            result.IsRetrieveError = !(isHtml && isSuccess);
+
+            if (result.IsRetrieveError)
+            {
+                Console.WriteLine($"Failed to retrieve HTML content for {uri.OriginalString}. StatusCode: {response.StatusCode}, IsHtml: {isHtml}");
+            }
+            else
+            {
+                result.HtmlContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            result.IsRetrieveError = true;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving HTML content for {uri.OriginalString}: {ex.Message}");
+            result.IsRetrieveError = true;
+        }
+
+        return result;
+    }
+
+    private async Task<IBrowser> EnsureBrowserAsync(PageArchiveOptions config, CancellationToken cancellationToken)
+    {
+        if (_browser is not null)
+        {
+            return _browser;
+        }
+
+        await _semaphore.WaitAsync(cancellationToken);
+
+        try
+        {
+            return _browser ??= await CreateBrowserAsync(config);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    private static async Task<IBrowser> CreateBrowserAsync(PageArchiveOptions config)
+    {
+        var browserFetcher = new BrowserFetcher();
         await browserFetcher.DownloadAsync();
 
-        _browser = await Puppeteer.LaunchAsync(new LaunchOptions
+        var launchOptions = new LaunchOptions
         {
             Headless = true,
             DefaultViewport = new ViewPortOptions
@@ -27,74 +167,15 @@ public class HtmlContentRetriever : IDisposable
                 Width = 1920,
                 Height = 1080
             }
-        });
-    }
-
-    public async Task<string> GetContentAsync(string url, LoadTesterThreadMetrics metrics, CancellationToken cancellationToken)
-    {
-        return _config.UseBrowser ?
-            await GetBrowserContentAsync(url, metrics, cancellationToken) :
-            await GetServerContentAsync(url, metrics, cancellationToken);
-    }
-
-    private async Task<string> GetBrowserContentAsync(string url, LoadTesterThreadMetrics metrics, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        using var page = await Browser.NewPageAsync();
-
-        page.PageError += (sender, eventArgs) =>
-        {
-            if (_config.LogBrowserConsoleError)
-            {
-                Console.WriteLine($"Browser console error on {url}: {eventArgs.Message}");
-            }
         };
 
-        var response = await page.GoToAsync(url);
-
-        metrics.RequestCount++;
-
-        if (!(((int)response.Status >= 200) && ((int)response.Status <= 299)))
+        if (!string.IsNullOrWhiteSpace(config.UserAgent))
         {
-            throw new HttpRequestException($"Response status code does not indicate success: {(int)response.Status} ({response.Status}).");
+            launchOptions.Args = new[] { $"--user-agent={config.UserAgent}" };
         }
 
-        if (_config.IsVerbose)
-        {
-            Console.WriteLine($"{response.Status} {url}");
-        }
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // Wait for JS to render (you may need to adjust the wait time)
-        // Alternatively, you could listen for JavaScript event if you can make the app emit one when it's done with initial rendering.
-        await page.WaitForTimeoutAsync(100);
-
-        return await page.GetContentAsync();
+        return await Puppeteer.LaunchAsync(launchOptions);
     }
-
-    private async Task<string> GetServerContentAsync(string url, LoadTesterThreadMetrics metrics, CancellationToken cancellationToken)
-    {
-        var client = HttpClient;
-
-        var response = await client.GetAsync(url, cancellationToken);
-
-        metrics.RequestCount++;
-
-        response.EnsureSuccessStatusCode();
-
-        if (_config.IsVerbose)
-        {
-            Console.WriteLine($"{response.StatusCode} {url}");
-        }
-
-        return await response.Content.ReadAsStringAsync(cancellationToken);
-    }
-
-    private IBrowser Browser => _browser ?? throw new InvalidOperationException("Call Init() before calling GetContent()");
-
-    private HttpClient HttpClient => _httpClient ??= new();
 
     protected virtual void Dispose(bool disposing)
     {

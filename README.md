@@ -6,7 +6,7 @@
 [![Build Status](https://img.shields.io/azure-devops/build/void-type/VoidCore/22/main)](https://dev.azure.com/void-type/VoidCore/_build/latest?definitionId=22&branchName=main)
 [![Test Coverage](https://img.shields.io/azure-devops/coverage/void-type/VoidCore/22/main)](https://dev.azure.com/void-type/VoidCore/_build/latest?definitionId=22&branchName=main)
 
-[LoadTest](https://github.com/void-type/loadtest) is a simple website load tester packaged in a .NET tool. It's not fully-featured and is just a toy/tool for myself, but feel free to use it.
+[LoadTest](https://github.com/void-type/loadtest) is a simple website utility packaged in a .NET tool. It's not fully-featured and is just a toy/tool for myself, but feel free to use it.
 
 - Load test a site using a list of URLs or point to the sitemap.
 - Save a list of URLs from the sitemap.

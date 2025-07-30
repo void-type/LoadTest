@@ -1,7 +1,7 @@
 ﻿namespace LoadTest.Test;
 using LoadTest.Helpers;
 
-public class ThreadHelperTests
+public class ThreadHelpersTests
 {
     /// <summary>
     /// Block division

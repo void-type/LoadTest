@@ -3,14 +3,19 @@ using System.Xml.Linq;
 
 namespace LoadTest.Services;
 
-public static class UrlsRetriever
+public class UrlsRetriever
 {
-    private static readonly HttpClient _httpClient = new();
+    private readonly HttpClient _httpClient;
+
+    public UrlsRetriever(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
 
     /// <summary>
     /// Get URLs from a local file or local/remote sitemap.
     /// </summary>
-    public static async Task<string[]> GetUrlsAsync(string path, CancellationToken cancellationToken)
+    public async Task<string[]> GetUrlsAsync(string path, CancellationToken cancellationToken)
     {
         var urls = File.Exists(path) && !path.EndsWith(".xml")
             ? await GetUrlsFromUrlListFileAsync(path, cancellationToken)
@@ -24,13 +29,12 @@ public static class UrlsRetriever
     /// <summary>
     /// Get URLs and save them to a local file.
     /// </summary>
-    public static async Task<int> SaveUrlsAsync(string path, string outputPath, CancellationToken cancellationToken)
+    public async Task SaveUrlsAsync(string path, string outputPath, CancellationToken cancellationToken)
     {
         var urls = await GetUrlsAsync(path, cancellationToken);
 
         Console.WriteLine($"Writing URLs to {outputPath}.");
         await File.WriteAllLinesAsync(outputPath, urls, cancellationToken);
-        return 0;
     }
 
     private static async Task<string[]> GetUrlsFromUrlListFileAsync(string filePath, CancellationToken cancellationToken)
@@ -41,7 +45,7 @@ public static class UrlsRetriever
             .ToArray();
     }
 
-    private static async Task<string[]> GetUrlsFromSitemapUrlAsync(string sitemapUrl, CancellationToken cancellationToken)
+    private async Task<string[]> GetUrlsFromSitemapUrlAsync(string sitemapUrl, CancellationToken cancellationToken)
     {
         Console.WriteLine("Getting URLs from sitemap.");
 
@@ -52,7 +56,7 @@ public static class UrlsRetriever
             .ToArray();
     }
 
-    private static async Task<List<string>> GetUrlsFromSitemapRecursiveAsync(string sitemapUrl, CancellationToken cancellationToken)
+    private async Task<List<string>> GetUrlsFromSitemapRecursiveAsync(string sitemapUrl, CancellationToken cancellationToken)
     {
         try
         {
@@ -110,7 +114,7 @@ public static class UrlsRetriever
     /// <summary>
     /// Can get XML from a file or URL.
     /// </summary>
-    private static async Task<XElement> GetSitemapXmlAsync(string sitemapUrl, CancellationToken cancellationToken)
+    private async Task<XElement> GetSitemapXmlAsync(string sitemapUrl, CancellationToken cancellationToken)
     {
         var xmlString = File.Exists(sitemapUrl) ?
             await File.ReadAllTextAsync(sitemapUrl, cancellationToken) :

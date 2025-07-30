@@ -1,13 +1,27 @@
-﻿using LoadTest.Commands;
-using System.CommandLine;
+﻿using Cocona;
+using LoadTest;
+using LoadTest.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
-var rootCommand = new RootCommand(description: "Simple website load tester.")
+var builder = CoconaApp.CreateBuilder();
+var services = builder.Services;
+
+// Disable logging
+services.AddLogging(loggingBuilder =>
 {
-    Name = "load-test"
-};
+    loggingBuilder.ClearProviders();
+    loggingBuilder.AddFilter(_ => false);
+});
 
-rootCommand.Add(Commands.LoadTestCommand);
-rootCommand.Add(Commands.MakeListCommand);
-rootCommand.Add(Commands.ArchivePagesCommand);
+services.AddHttpClient();
+services.AddSingleton<UrlsRetriever>();
+services.AddSingleton<LoadTester>();
+services.AddSingleton<PageArchiver>();
+services.AddSingleton<HtmlContentRetriever>();
 
-return await rootCommand.InvokeAsync(args);
+var app = builder.Build();
+
+app.AddCommands<LoadTestCommands>();
+
+await app.RunAsync();
