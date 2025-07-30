@@ -9,7 +9,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/src/LoadTest/bin/Debug/net8.0/LoadTest.dll",
+      "program": "${workspaceFolder}/src/LoadTest/bin/Debug/net9.0/LoadTest.dll",
       "args": [],
       "cwd": "${workspaceFolder}",
       "console": "internalConsole",
