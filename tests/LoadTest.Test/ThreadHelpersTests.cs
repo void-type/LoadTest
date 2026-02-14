@@ -1,4 +1,5 @@
 ﻿namespace LoadTest.Test;
+
 using LoadTest.Helpers;
 
 public class ThreadHelpersTests

@@ -60,6 +60,8 @@ public class PageArchiver
 
                 var passResult = (await Task.WhenAll(tasks)).Combine();
 
+                jobResult = jobResult.Combine(passResult);
+
                 var previousUrls = jobResult.PageResults
                     .Select(y => y.Url.ToString())
                     .ToArray();
@@ -72,8 +74,6 @@ public class PageArchiver
 
                 uris = newSpiderLinks;
                 spiderLinksCount += newSpiderLinks.Length;
-
-                jobResult = jobResult.Combine(passResult);
 
             } while (uris.Length > 0 && !cancellationToken.IsCancellationRequested);
         }
