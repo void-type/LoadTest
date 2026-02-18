@@ -1,6 +1,7 @@
 ﻿using LoadTest.Helpers;
 using LoadTest.Models;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using VoidCore.Model.Text;
 
 namespace LoadTest.Services;
@@ -243,23 +244,6 @@ public class PageArchiver
 
     private static bool PathIsNotExcluded(PageArchiveOptions config, Uri uri)
     {
-        return !(config.ExcludedUrls?.Exists(x =>
-        {
-            if (x.EndsWith("*", StringComparison.OrdinalIgnoreCase))
-            {
-                x = x[..^1];
-
-                if (x.StartsWith("*", StringComparison.OrdinalIgnoreCase))
-                {
-                    x = x[1..];
-
-                    return uri.PathAndQuery.Contains(x, StringComparison.OrdinalIgnoreCase);
-                }
-
-                return uri.PathAndQuery.StartsWith(x, StringComparison.OrdinalIgnoreCase);
-            }
-
-            return uri.PathAndQuery.EqualsIgnoreCase(x);
-        }) ?? false);
+        return !(config.ExcludedUrlsRegexPattern?.Exists(x => Regex.IsMatch(uri.PathAndQuery, x, RegexOptions.IgnoreCase)) ?? false);
     }
 }
