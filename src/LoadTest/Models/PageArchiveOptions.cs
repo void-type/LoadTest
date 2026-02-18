@@ -7,9 +7,9 @@ public class PageArchiveOptions : ICommandParameterSet
     [Option("path", ['p'], Description = "URL to a sitemap or file path to a URL list. If file path ends in \".xml\", file is assumed a local copy of a sitemap.", ValueName = "path")]
     public string SitemapUrl { get; init; } = string.Empty;
 
-    [Option("exclude-urls", Description = "Exclude URL paths. You can end with a * for \"starts with\", or surround with * for \"contains\".", ValueName = "url")]
+    [Option("exclude-urls-regex", Description = "Exclude URL paths using regular expressions.", ValueName = "regex")]
     [HasDefaultValue]
-    public List<string>? ExcludedUrls { get; init; }
+    public List<string>? ExcludedUrlsRegexPattern { get; init; }
 
     [Option("output", ['o'], Description = "File path to save output to.", ValueName = "folder path")]
     public string OutputPath { get; init; } = string.Empty;
