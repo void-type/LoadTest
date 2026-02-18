@@ -49,6 +49,7 @@ public static class FileHelper
 
     public static async Task SaveResultsCsvAsync(string csvFilePath, PageArchiveResult jobResult)
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(csvFilePath)!);
         await using var writer = new StreamWriter(csvFilePath);
         await using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
         csv.Context.TypeConverterCache.AddConverter<List<string>>(new StringListConverter());
