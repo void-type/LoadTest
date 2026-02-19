@@ -21,7 +21,7 @@ public class LoadTester
     /// </summary>
     public async Task RunLoadTestAsync(LoadTestOptions options, CancellationToken cancellationToken)
     {
-        var urls = await _urlsRetriever.GetUrlsAsync(options.SitemapUrl, cancellationToken);
+        var urls = await _urlsRetriever.GetUrlsAsync(options.SitemapUrl, options.CustomHeaders, options.UserAgent, cancellationToken);
 
         if (urls.Length == 0)
         {
@@ -98,6 +98,7 @@ public class LoadTester
                 }
 
                 var request = new HttpRequestMessage(options.RequestMethod, url);
+                HttpRequestHelper.ApplyHeaders(request, options.CustomHeaders, options.UserAgent);
                 var response = await httpClient.SendAsync(request, cancellationToken);
 
                 metrics.RequestCount++;

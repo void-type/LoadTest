@@ -24,7 +24,7 @@ public class PageArchiver
     {
         var csvFilePath = $"{options.OutputPath.TrimEnd('/')}/{DateTime.Now:yyyyMMdd_HHmmss}_{nameof(PageArchiver)}.csv";
 
-        var uris = (await _urlsRetriever.GetUrlsAsync(options.SitemapUrl, cancellationToken))
+        var uris = (await _urlsRetriever.GetUrlsAsync(options.SitemapUrl, options.CustomHeaders, options.UserAgent, cancellationToken))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x.GetNormalizedUri(options.PrimaryDomain, options.PrimaryDomainEquivalents, null))
             .Where(x => x is not null && PathIsNotExcluded(options, x))

@@ -41,6 +41,13 @@ public class HtmlContentRetriever : IDisposable
                 }
             };
 
+            var extraHeaders = HttpRequestHelper.GetExtraHeaders(config.CustomHeaders);
+
+            if (extraHeaders.Count > 0)
+            {
+                await page.SetExtraHttpHeadersAsync(extraHeaders);
+            }
+
             var response = await page.GoToAsync(uri.OriginalString);
 
             var isSuccess = response.IsSuccessStatusCode();
@@ -92,10 +99,7 @@ public class HtmlContentRetriever : IDisposable
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
 
-            if (!string.IsNullOrWhiteSpace(config.UserAgent))
-            {
-                request.Headers.Add("User-Agent", config.UserAgent);
-            }
+            HttpRequestHelper.ApplyHeaders(request, config.CustomHeaders, config.UserAgent);
 
             var response = await _httpClient.SendAsync(request, cancellationToken);
 
