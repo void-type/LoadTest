@@ -9,7 +9,7 @@ public class PageArchiveOptions : ICommandParameterSet
 
     [Option("exclude-urls-regex", Description = "Exclude URL paths using regular expressions.", ValueName = "regex")]
     [HasDefaultValue]
-    public List<string>? ExcludedUrlsRegexPattern { get; init; }
+    public List<string>? ExcludedUrlsRegexPatterns { get; init; }
 
     [Option("output", ['o'], Description = "File path to save output to.", ValueName = "folder path")]
     public string OutputPath { get; init; } = string.Empty;
