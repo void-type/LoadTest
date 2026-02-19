@@ -244,6 +244,6 @@ public class PageArchiver
 
     private static bool PathIsNotExcluded(PageArchiveOptions config, Uri uri)
     {
-        return !(config.ExcludedUrlsRegexPattern?.Exists(x => Regex.IsMatch(uri.PathAndQuery, x, RegexOptions.IgnoreCase)) ?? false);
+        return !(config.ExcludedUrlsRegexPatterns?.Exists(x => Regex.IsMatch(uri.PathAndQuery, x, RegexOptions.IgnoreCase)) ?? false);
     }
 }
