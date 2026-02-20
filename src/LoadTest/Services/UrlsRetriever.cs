@@ -1,6 +1,6 @@
-﻿using System.Xml;
+﻿using LoadTest.Helpers;
+using System.Xml;
 using System.Xml.Linq;
-using LoadTest.Helpers;
 
 namespace LoadTest.Services;
 

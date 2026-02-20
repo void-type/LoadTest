@@ -1,4 +1,4 @@
-namespace LoadTest.Helpers;
+﻿namespace LoadTest.Helpers;
 
 public static class HttpRequestHelper
 {
