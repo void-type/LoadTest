@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using LoadTest.Helpers;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace LoadTest.Services;
@@ -15,11 +16,11 @@ public class UrlsRetriever
     /// <summary>
     /// Get URLs from a local file or local/remote sitemap.
     /// </summary>
-    public async Task<string[]> GetUrlsAsync(string path, CancellationToken cancellationToken)
+    public async Task<string[]> GetUrlsAsync(string path, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
     {
         var urls = File.Exists(path) && !path.EndsWith(".xml")
             ? await GetUrlsFromUrlListFileAsync(path, cancellationToken)
-            : await GetUrlsFromSitemapUrlAsync(path, cancellationToken);
+            : await GetUrlsFromSitemapUrlAsync(path, customHeaders, userAgent, cancellationToken);
 
         Console.WriteLine($"Found {urls.Length} URLs.");
 
@@ -29,9 +30,9 @@ public class UrlsRetriever
     /// <summary>
     /// Get URLs and save them to a local file.
     /// </summary>
-    public async Task SaveUrlsAsync(string path, string outputPath, CancellationToken cancellationToken)
+    public async Task SaveUrlsAsync(string path, string outputPath, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
     {
-        var urls = await GetUrlsAsync(path, cancellationToken);
+        var urls = await GetUrlsAsync(path, customHeaders, userAgent, cancellationToken);
 
         Console.WriteLine($"Writing URLs to {outputPath}.");
         await File.WriteAllLinesAsync(outputPath, urls, cancellationToken);
@@ -45,22 +46,22 @@ public class UrlsRetriever
             .ToArray();
     }
 
-    private async Task<string[]> GetUrlsFromSitemapUrlAsync(string sitemapUrl, CancellationToken cancellationToken)
+    private async Task<string[]> GetUrlsFromSitemapUrlAsync(string sitemapUrl, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
     {
         Console.WriteLine("Getting URLs from sitemap.");
 
-        var urls = await GetUrlsFromSitemapRecursiveAsync(sitemapUrl, cancellationToken);
+        var urls = await GetUrlsFromSitemapRecursiveAsync(sitemapUrl, customHeaders, userAgent, cancellationToken);
 
         return urls
             .Distinct()
             .ToArray();
     }
 
-    private async Task<List<string>> GetUrlsFromSitemapRecursiveAsync(string sitemapUrl, CancellationToken cancellationToken)
+    private async Task<List<string>> GetUrlsFromSitemapRecursiveAsync(string sitemapUrl, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
     {
         try
         {
-            var xml = await GetSitemapXmlAsync(sitemapUrl, cancellationToken);
+            var xml = await GetSitemapXmlAsync(sitemapUrl, customHeaders, userAgent, cancellationToken);
 
             var urls = new List<string>();
 
@@ -92,7 +93,7 @@ public class UrlsRetriever
             foreach (var childSitemapUrl in childSitemapUrls)
             {
                 Console.WriteLine($"Following child sitemap at {childSitemapUrl}.");
-                urls.AddRange(await GetUrlsFromSitemapRecursiveAsync(childSitemapUrl, cancellationToken));
+                urls.AddRange(await GetUrlsFromSitemapRecursiveAsync(childSitemapUrl, customHeaders, userAgent, cancellationToken));
             }
 
             return urls;
@@ -114,12 +115,21 @@ public class UrlsRetriever
     /// <summary>
     /// Can get XML from a file or URL.
     /// </summary>
-    private async Task<XElement> GetSitemapXmlAsync(string sitemapUrl, CancellationToken cancellationToken)
+    private async Task<XElement> GetSitemapXmlAsync(string sitemapUrl, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
     {
-        var xmlString = File.Exists(sitemapUrl) ?
-            await File.ReadAllTextAsync(sitemapUrl, cancellationToken) :
-            await _httpClient.GetStringAsync(sitemapUrl, cancellationToken);
+        if (File.Exists(sitemapUrl))
+        {
+            var fileContent = await File.ReadAllTextAsync(sitemapUrl, cancellationToken);
+            return XElement.Parse(fileContent);
+        }
 
+        using var request = new HttpRequestMessage(HttpMethod.Get, sitemapUrl);
+        HttpRequestHelper.ApplyHeaders(request, customHeaders, userAgent);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var xmlString = await response.Content.ReadAsStringAsync(cancellationToken);
         return XElement.Parse(xmlString);
     }
 }

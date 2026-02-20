@@ -9,4 +9,12 @@ public class SaveUrlsOptions : ICommandParameterSet
 
     [Option("output", ['o'], Description = "File path to save output to.", ValueName = "output")]
     public string OutputPath { get; init; } = string.Empty;
+
+    [Option("header", Description = "Custom headers to include in requests. Format: \"Key: Value\".", ValueName = "header")]
+    [HasDefaultValue]
+    public List<string>? CustomHeaders { get; init; }
+
+    [Option("user-agent", Description = "User-Agent to use for requests.", ValueName = "user-agent")]
+    [HasDefaultValue]
+    public string? UserAgent { get; init; }
 }

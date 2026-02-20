@@ -66,4 +66,8 @@ public class PageArchiveOptions : ICommandParameterSet
     [Option("user-agent", Description = "User-Agent to use for requests.", ValueName = "user-agent")]
     [HasDefaultValue]
     public string? UserAgent { get; init; }
+
+    [Option("header", Description = "Custom headers to include in requests. Format: \"Key: Value\".", ValueName = "header")]
+    [HasDefaultValue]
+    public List<string>? CustomHeaders { get; init; }
 }
