@@ -38,10 +38,14 @@ foreach (var (path, title) in pages)
         var html = $"""
             <!DOCTYPE html>
             <html>
-            <head><title>{title}</title></head>
+            <head>
+                <title>{title}</title>
+                <link rel="stylesheet" href="/site.css">
+            </head>
             <body>
                 <h1>{title}</h1>
                 <p>This is the {title} page.</p>
+                <img src="/logo.png">
                 <nav>
                     {string.Join("\n            ", pages.Select(p => $"<a href=\"{p.Key}\">{p.Value}</a>"))}
                 </nav>
@@ -52,6 +56,22 @@ foreach (var (path, title) in pages)
         return Results.Content(html, "text/html");
     });
 }
+
+app.MapGet("/site.css", (HttpContext context) =>
+{
+    LogHeaders(context);
+
+    return Results.Content("body { font-family: sans-serif; }", "text/css");
+});
+
+app.MapGet("/logo.png", (HttpContext context) =>
+{
+    LogHeaders(context);
+
+    var pngBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
+
+    return Results.File(pngBytes, "image/png");
+});
 
 app.Run(baseUrl);
 

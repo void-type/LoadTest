@@ -96,7 +96,7 @@ public class PageArchiver
         var seconds = elapsedTime.TotalMilliseconds / 1000;
         var safeSeconds = seconds < 1 ? 1 : seconds;
 
-        Console.WriteLine($"{jobResult.RequestCount} requests in {elapsedTime} = {jobResult.RequestCount / safeSeconds:F2} RPS");
+        Console.WriteLine($"{jobResult.RequestCount} pages in {elapsedTime} = {jobResult.RequestCount / safeSeconds:F2} PPS");
 
         if (options.IsSpiderEnabled)
         {

@@ -29,6 +29,13 @@ public class LoadTestOptions : ICommandParameterSet
     [Option("verbose", ['v'], Description = "Show more logging.", ValueName = "verbose")]
     public bool IsVerbose { get; init; }
 
+    [Option("resources", ['r'], Description = "Also request embedded page resources (img, stylesheet, and script tags) found in HTML responses.")]
+    public bool IncludeResources { get; init; }
+
+    [Option("resource-domains", Description = "Additional domains allowed when fetching embedded resources with --resources. The page's own domain is always allowed.", ValueName = "example.com")]
+    [HasDefaultValue]
+    public string[]? ResourceDomains { get; init; }
+
     [Option("header", Description = "Custom headers to include in requests. Format: \"Key: Value\".", ValueName = "header")]
     [HasDefaultValue]
     public List<string>? CustomHeaders { get; init; }

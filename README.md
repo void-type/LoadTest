@@ -53,6 +53,10 @@ vt-loadtest load --path 'https://developers.google.com/sitemap.xml' --seconds 30
 # Use a local list of URLs rather than a sitemap. Force at least 20% chance of 404.
 vt-loadtest load --path './urls.txt' --chance-404 20
 
+# Load test and also fetch embedded page resources (img, stylesheet, script) found in HTML responses.
+# Only resources on the page's own domain are fetched unless allowed via --resource-domains.
+vt-loadtest load --path 'https://example.com/sitemap.xml' --resources --resource-domains cdn.example.com
+
 # Crawl a sitemap index and write the URLs to a local file to speed up repeat runs where sitemap retrieval is slow.
 vt-loadtest save-urls --path 'https://developers.google.com/sitemap.xml' --output './urls.txt'
 
