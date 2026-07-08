@@ -12,7 +12,7 @@
 - Save a list of URLs from the sitemap.
 - Archive html from pages.
   - Save html source or use --browser to save the JS-rendered page markup.
-  - Use --log-browser-errors to capture JS console errors to QA your site.
+  - Use --browser-errors to capture JS console errors to QA your site.
 
 ## Install
 
@@ -41,20 +41,23 @@ dotnet tool install -g vt-loadtest --add-source ./artifacts/dist/pre-release --p
 
 ## Usage
 
-If running from source, replace `vt-loadtest` with `dotnet run --`.
+If running from source, replace `vt-loadtest` with `dotnet run --project src/LoadTest --`.
 
 ```powershell
 # Load test using a remote sitemap on 2 threads. Works on nested sitemap indexes.
-vt-loadtest run --path 'https://developers.google.com/tasks/sitemap.xml' --threads 2
+vt-loadtest load --path 'https://developers.google.com/tasks/sitemap.xml' --threads 2
 
 # Load test using a remote sitemap index for 30 seconds and limit the rate of requests.
-vt-loadtest run --path 'https://developers.google.com/sitemap.xml' --seconds 30 --delay
+vt-loadtest load --path 'https://developers.google.com/sitemap.xml' --seconds 30 --delay
 
-# Use a local list of URLs rather than a site map. Force at least 20% chance of 404.
-vt-loadtest run --path './samples/sitemapUrls.txt' --chance-404 20
+# Use a local list of URLs rather than a sitemap. Force at least 20% chance of 404.
+vt-loadtest load --path './urls.txt' --chance-404 20
 
 # Crawl a sitemap index and write the URLs to a local file to speed up repeat runs where sitemap retrieval is slow.
-vt-loadtest make-list --path 'https://developers.google.com/sitemap.xml' --output './samples/url-list.txt'
+vt-loadtest save-urls --path 'https://developers.google.com/sitemap.xml' --output './urls.txt'
+
+# Archive rendered HTML for a site, spidering linked pages and logging JS console errors.
+vt-loadtest archive --path 'https://example.com/sitemap.xml' --output './archive' --browser --browser-errors --spider --domain example.com
 ```
 
 See `vt-loadtest -h` for more.
