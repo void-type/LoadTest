@@ -30,9 +30,16 @@ public class UrlsRetriever
     /// <summary>
     /// Get URLs and save them to a local file.
     /// </summary>
-    public async Task SaveUrlsAsync(string path, string outputPath, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
+    public async Task SaveUrlsAsync(string path, string outputPath, List<string>? customHeaders, string? userAgent,
+        string? primaryDomain, string[]? primaryDomainEquivalents, CancellationToken cancellationToken)
     {
-        var urls = await GetUrlsAsync(path, customHeaders, userAgent, cancellationToken);
+        var urls = (await GetUrlsAsync(path, customHeaders, userAgent, cancellationToken))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.GetNormalizedUri(primaryDomain, primaryDomainEquivalents, null))
+            .Where(x => x is not null)
+            .Select(x => x!.ToString())
+            .Distinct()
+            .ToArray();
 
         Console.WriteLine($"Writing URLs to {outputPath}.");
         await File.WriteAllLinesAsync(outputPath, urls, cancellationToken);

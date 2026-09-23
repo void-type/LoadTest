@@ -17,4 +17,12 @@ public class SaveUrlsOptions : ICommandParameterSet
     [Option("user-agent", Description = "User-Agent to use for requests.", ValueName = "user-agent")]
     [HasDefaultValue]
     public string? UserAgent { get; init; }
+
+    [Option("domain", Description = "Primary domain. URLs from domain-alts are rewritten to this domain.", ValueName = "example.com")]
+    [HasDefaultValue]
+    public string? PrimaryDomain { get; init; }
+
+    [Option("domain-alts", Description = "Domains to rewrite to the primary domain, such as a production domain found in a sitemap for another environment.", ValueName = "www.example.com")]
+    [HasDefaultValue]
+    public string[]? PrimaryDomainEquivalents { get; init; }
 }
