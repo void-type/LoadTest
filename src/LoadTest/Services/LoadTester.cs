@@ -21,7 +21,13 @@ public class LoadTester
     /// </summary>
     public async Task RunLoadTestAsync(LoadTestOptions options, CancellationToken cancellationToken)
     {
-        var urls = await _urlsRetriever.GetUrlsAsync(options.SitemapUrl, options.CustomHeaders, options.UserAgent, cancellationToken);
+        var urls = (await _urlsRetriever.GetUrlsAsync(options.SitemapUrl, options.CustomHeaders, options.UserAgent, cancellationToken))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.GetNormalizedUri(options.PrimaryDomain, options.PrimaryDomainEquivalents, null))
+            .Where(x => x is not null)
+            .Select(x => x!.ToString())
+            .Distinct()
+            .ToArray();
 
         if (urls.Length == 0)
         {
