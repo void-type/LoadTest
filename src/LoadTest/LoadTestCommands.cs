@@ -19,7 +19,8 @@ public class LoadTestCommands
     [Command("save-urls", Description = "Save the sitemap as a list of URLs. Speeds up repeat runs.")]
     public async Task MakeListAsync(SaveUrlsOptions options, [FromService] UrlsRetriever urlsRetriever)
     {
-        await urlsRetriever.SaveUrlsAsync(options.SitemapUrl, options.OutputPath, options.CustomHeaders, options.UserAgent, CancellationToken);
+        await urlsRetriever.SaveUrlsAsync(options.SitemapUrl, options.OutputPath, options.CustomHeaders, options.UserAgent,
+            options.PrimaryDomain, options.PrimaryDomainEquivalents, CancellationToken);
     }
 
     [Command("load", Description = "Run a load test on a given set of URLs. Does not spider.")]
