@@ -2,9 +2,7 @@
 
 [![License](https://img.shields.io/github/license/void-type/LoadTest.svg)](https://github.com/void-type/LoadTest/blob/main/LICENSE.txt)
 [![NuGet package](https://img.shields.io/nuget/v/Vt-loadtest.svg)](https://www.nuget.org/packages/vt-loadtest/)
-[![MyGet package](https://img.shields.io/myget/voidcoredev/vpre/vt-loadtest.svg?label=myget)](https://www.myget.org/feed/voidcoredev/package/nuget/vt-loadtest)
-[![Build Status](https://img.shields.io/azure-devops/build/void-type/VoidCore/22/main)](https://dev.azure.com/void-type/VoidCore/_build/latest?definitionId=22&branchName=main)
-[![Test Coverage](https://img.shields.io/azure-devops/coverage/void-type/VoidCore/22/main)](https://dev.azure.com/void-type/VoidCore/_build/latest?definitionId=22&branchName=main)
+[![Build Status](https://github.com/void-type/LoadTest/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/void-type/LoadTest/actions/workflows/ci.yml)
 
 [LoadTest](https://github.com/void-type/loadtest) is a simple website utility packaged in a .NET tool. It's not fully-featured and is just a toy/tool for myself, but feel free to use it.
 
@@ -32,11 +30,13 @@ You need the [.NET SDK](https://dot.net/download) to build this project.
 ./build/build.ps1
 ```
 
+LoadTest is built on [GitHub Actions](https://github.com/void-type/LoadTest/actions/workflows/ci.yml) and released on [NuGet](https://www.nuget.org/packages/vt-loadtest/). To release, run the CI workflow manually on main. It builds, pushes to NuGet using trusted publishing, then tags and creates the GitHub release.
+
 To install a local build:
 
 ```powershell
 dotnet tool uninstall -g vt-loadtest
-dotnet tool install -g vt-loadtest --add-source ./artifacts/dist/pre-release --prerelease
+./build/installFromArtifacts.ps1
 ```
 
 ## Usage
