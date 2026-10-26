@@ -5,16 +5,9 @@ using LoadTest.Services;
 
 namespace LoadTest;
 
-public class LoadTestCommands
+public class LoadTestCommands(ICoconaAppContextAccessor contextAccessor)
 {
-    private readonly ICoconaAppContextAccessor _contextAccessor;
-
-    public LoadTestCommands(ICoconaAppContextAccessor contextAccessor)
-    {
-        _contextAccessor = contextAccessor;
-    }
-
-    public CancellationToken CancellationToken => _contextAccessor?.Current?.CancellationToken ?? CancellationToken.None;
+    public CancellationToken CancellationToken => contextAccessor?.Current?.CancellationToken ?? CancellationToken.None;
 
     [Command("save-urls", Description = "Save the sitemap as a list of URLs. Speeds up repeat runs.")]
     public async Task MakeListAsync(SaveUrlsOptions options, [FromService] UrlsRetriever urlsRetriever)

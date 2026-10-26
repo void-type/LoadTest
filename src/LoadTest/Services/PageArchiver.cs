@@ -6,16 +6,8 @@ using VoidCore.Model.Text;
 
 namespace LoadTest.Services;
 
-public class PageArchiver
+public class PageArchiver(UrlsRetriever urlsRetriever, HtmlContentRetriever htmlContentRetriever)
 {
-    private readonly UrlsRetriever _urlsRetriever;
-    private readonly HtmlContentRetriever _htmlContentRetriever;
-
-    public PageArchiver(UrlsRetriever urlsRetriever, HtmlContentRetriever htmlContentRetriever)
-    {
-        _urlsRetriever = urlsRetriever;
-        _htmlContentRetriever = htmlContentRetriever;
-    }
 
     /// <summary>
     /// Saves a copy of the page HTML.
@@ -24,7 +16,7 @@ public class PageArchiver
     {
         var csvFilePath = $"{options.OutputPath.TrimEnd('/')}/{DateTime.Now:yyyyMMdd_HHmmss}_{nameof(PageArchiver)}.csv";
 
-        var uris = (await _urlsRetriever.GetUrlsAsync(options.SitemapUrl, options.CustomHeaders, options.UserAgent, cancellationToken))
+        var uris = (await urlsRetriever.GetUrlsAsync(options.SitemapUrl, options.CustomHeaders, options.UserAgent, cancellationToken))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x.GetNormalizedUri(options.PrimaryDomain, options.PrimaryDomainEquivalents, null))
             .Where(x => x is not null && PathIsNotExcluded(options, x))
@@ -56,7 +48,7 @@ public class PageArchiver
 
                 var tasks = Enumerable
                     .Range(0, options.ThreadCount)
-                    .Select(i => StartThreadAsync(i, uris, options, _htmlContentRetriever, isSpiderPass, cancellationToken))
+                    .Select(i => StartThreadAsync(i, uris, options, htmlContentRetriever, isSpiderPass, cancellationToken))
                     .ToArray();
 
                 var passResult = (await Task.WhenAll(tasks)).Combine();

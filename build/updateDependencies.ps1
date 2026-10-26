@@ -9,7 +9,7 @@ try {
   dotnet outdated -u
 
   if ($LASTEXITCODE -ne 0) {
-    Write-Warning "You need to update the Directory.build.props files by hand to update the following packages."
+    Write-Warning "You need to update the Directory.Packages.props file by hand to update the following packages."
     dotnet outdated
   }
 

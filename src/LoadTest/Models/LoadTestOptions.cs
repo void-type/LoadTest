@@ -4,7 +4,7 @@ namespace LoadTest.Models;
 
 public class LoadTestOptions : ICommandParameterSet
 {
-    [Option("path", ['p'], Description = "URL to a sitemap or file path to a URL list. If file path ends in \".xml\", file is assumed a local copy of a sitemap.", ValueName = "path")]
+    [Option("path", ['p'], Description = "URL to a sitemap (.xml or .xml.gz), a root domain whose robots.txt lists sitemaps, or file path to a URL list. If file path ends in \".xml\" or \".gz\", file is assumed a local copy of a sitemap.", ValueName = "path")]
     public string SitemapUrl { get; set; } = string.Empty;
 
     [Option("threads", ['t'], Description = "Number of concurrent threads to make requests.", ValueName = "threads")]
