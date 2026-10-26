@@ -12,13 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.8.3" />
-    <PackageReference Include="Cocona" Version="2.2.0" />
-    <PackageReference Include="CsvHelper" Version="33.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
-    <PackageReference Include="PuppeteerSharp" Version="25.12.0" />
-    <PackageReference Include="VoidCore.Model" Version="15.3.1" />
+    <PackageReference Include="AngleSharp" />
+    <PackageReference Include="Cocona" />
+    <PackageReference Include="CsvHelper" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="PuppeteerSharp" />
+    <PackageReference Include="VoidCore.Model" />
   </ItemGroup>
 
   <ItemGroup>

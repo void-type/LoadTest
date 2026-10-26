@@ -1,24 +1,18 @@
 ﻿using LoadTest.Helpers;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 
 namespace LoadTest.Services;
 
-public class UrlsRetriever
+public class UrlsRetriever(HttpClient httpClient)
 {
-    private readonly HttpClient _httpClient;
-
-    public UrlsRetriever(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     /// <summary>
-    /// Get URLs from a local file or local/remote sitemap.
+    /// Get URLs from a local file, local/remote sitemap (plain or gzipped), or a root domain whose robots.txt lists sitemaps.
     /// </summary>
     public async Task<string[]> GetUrlsAsync(string path, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
     {
-        var urls = File.Exists(path) && !path.EndsWith(".xml")
+        var urls = File.Exists(path) && !path.EndsWith(".xml") && !path.EndsWith(".gz")
             ? await GetUrlsFromUrlListFileAsync(path, cancellationToken)
             : await GetUrlsFromSitemapUrlAsync(path, customHeaders, userAgent, cancellationToken);
 
@@ -57,11 +51,52 @@ public class UrlsRetriever
     {
         Console.WriteLine("Getting URLs from sitemap.");
 
-        var urls = await GetUrlsFromSitemapRecursiveAsync(sitemapUrl, customHeaders, userAgent, cancellationToken);
+        var sitemapUrls = await GetSitemapUrlsFromRobotsAsync(sitemapUrl, customHeaders, userAgent, cancellationToken) ?? [sitemapUrl];
+
+        var urls = new List<string>();
+
+        foreach (var url in sitemapUrls)
+        {
+            urls.AddRange(await GetUrlsFromSitemapRecursiveAsync(url, customHeaders, userAgent, cancellationToken));
+        }
 
         return urls
             .Distinct()
             .ToArray();
+    }
+
+    /// <summary>
+    /// If the path is a root domain, finds sitemap URLs in its robots.txt. Returns null if the path isn't a root domain.
+    /// </summary>
+    private async Task<string[]?> GetSitemapUrlsFromRobotsAsync(string path, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
+    {
+        var robotsUri = SitemapHelpers.GetRobotsUri(path);
+
+        if (robotsUri is null)
+        {
+            return null;
+        }
+
+        Console.WriteLine($"Looking for sitemaps in {robotsUri}.");
+
+        try
+        {
+            var robotsContent = Encoding.UTF8.GetString(await GetBytesAsync(robotsUri.ToString(), customHeaders, userAgent, cancellationToken));
+            var sitemapUrls = SitemapHelpers.GetSitemapUrlsFromRobots(robotsContent);
+
+            if (sitemapUrls.Length == 0)
+            {
+                Console.WriteLine($"No sitemaps found in {robotsUri}.");
+            }
+
+            return sitemapUrls;
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"Error retrieving robots.txt at {robotsUri} (Status Code: {ex.StatusCode}).");
+
+            return [];
+        }
     }
 
     private async Task<List<string>> GetUrlsFromSitemapRecursiveAsync(string sitemapUrl, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
@@ -120,23 +155,25 @@ public class UrlsRetriever
     }
 
     /// <summary>
-    /// Can get XML from a file or URL.
+    /// Can get XML from a file or URL. Gzipped sitemaps are decompressed.
     /// </summary>
     private async Task<XElement> GetSitemapXmlAsync(string sitemapUrl, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
     {
-        if (File.Exists(sitemapUrl))
-        {
-            var fileContent = await File.ReadAllTextAsync(sitemapUrl, cancellationToken);
-            return XElement.Parse(fileContent);
-        }
+        var content = File.Exists(sitemapUrl)
+            ? await File.ReadAllBytesAsync(sitemapUrl, cancellationToken)
+            : await GetBytesAsync(sitemapUrl, customHeaders, userAgent, cancellationToken);
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, sitemapUrl);
+        return XElement.Parse(await SitemapHelpers.DecodeSitemapAsync(content, cancellationToken));
+    }
+
+    private async Task<byte[]> GetBytesAsync(string url, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
         HttpRequestHelper.ApplyHeaders(request, customHeaders, userAgent);
 
-        var response = await _httpClient.SendAsync(request, cancellationToken);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var xmlString = await response.Content.ReadAsStringAsync(cancellationToken);
-        return XElement.Parse(xmlString);
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
     }
 }

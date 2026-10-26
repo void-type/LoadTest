@@ -5,23 +5,15 @@ using System.Security.Cryptography;
 
 namespace LoadTest.Services;
 
-public class LoadTester
+public class LoadTester(HttpClient httpClient, UrlsRetriever urlsRetriever)
 {
-    private readonly HttpClient _httpClient;
-    private readonly UrlsRetriever _urlsRetriever;
-
-    public LoadTester(HttpClient httpClient, UrlsRetriever urlsRetriever)
-    {
-        _httpClient = httpClient;
-        _urlsRetriever = urlsRetriever;
-    }
 
     /// <summary>
     /// Request URLs and log metrics.
     /// </summary>
     public async Task RunLoadTestAsync(LoadTestOptions options, CancellationToken cancellationToken)
     {
-        var urls = (await _urlsRetriever.GetUrlsAsync(options.SitemapUrl, options.CustomHeaders, options.UserAgent, cancellationToken))
+        var urls = (await urlsRetriever.GetUrlsAsync(options.SitemapUrl, options.CustomHeaders, options.UserAgent, cancellationToken))
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x.GetNormalizedUri(options.PrimaryDomain, options.PrimaryDomainEquivalents, null))
             .Where(x => x is not null)
@@ -41,7 +33,7 @@ public class LoadTester
 
         var tasks = Enumerable
             .Range(0, options.ThreadCount)
-            .Select(i => StartThreadAsync(i, urls, startTime, options, _httpClient, cancellationToken))
+            .Select(i => StartThreadAsync(i, urls, startTime, options, httpClient, cancellationToken))
             .ToArray();
 
         var metricCollection = await Task.WhenAll(tasks);

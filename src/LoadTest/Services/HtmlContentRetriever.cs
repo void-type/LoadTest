@@ -4,17 +4,11 @@ using PuppeteerSharp;
 
 namespace LoadTest.Services;
 
-public class HtmlContentRetriever : IDisposable
+public class HtmlContentRetriever(HttpClient httpClient) : IDisposable
 {
-    private readonly HttpClient _httpClient;
     private readonly SemaphoreSlim _semaphore = new(1);
     private IBrowser? _browser;
     private bool _disposedValue;
-
-    public HtmlContentRetriever(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
 
     public async Task<HtmlContentRetrieverResult> GetContentAsync(PageArchiveOptions config, Uri uri, CancellationToken cancellationToken)
     {
@@ -101,7 +95,7 @@ public class HtmlContentRetriever : IDisposable
 
             HttpRequestHelper.ApplyHeaders(request, config.CustomHeaders, config.UserAgent);
 
-            var response = await _httpClient.SendAsync(request, cancellationToken);
+            var response = await httpClient.SendAsync(request, cancellationToken);
 
             var isSuccess = response.IsSuccessStatusCode();
             var isHtml = response.Content.Headers.ContentType?.MediaType?.Equals("text/html", StringComparison.OrdinalIgnoreCase) ?? false;
