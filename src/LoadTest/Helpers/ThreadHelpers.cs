@@ -30,7 +30,8 @@ public static class ThreadHelpers
         var firstIndex = blockIndex * blockSize;
 
         // If the firstIndex is on the edge, check to see if the last item included it.
-        if (firstIndex >= totalCount - 1)
+        // The first block always starts at the first item, even when it's the only item.
+        if (blockIndex > 0 && firstIndex >= totalCount - 1)
         {
             var (_, lastLastIndex) = GetBlockStartAndEnd(blockIndex - 1, blockCount, totalCount);
 

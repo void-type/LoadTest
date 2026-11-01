@@ -1,6 +1,5 @@
 ﻿using LoadTest.Helpers;
 using LoadTest.Models;
-using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace LoadTest.Services;
@@ -11,7 +10,11 @@ public class LoadTester(HttpClient httpClient, UrlsRetriever urlsRetriever)
     /// <summary>
     /// Request URLs and log metrics.
     /// </summary>
-    public async Task RunLoadTestAsync(LoadTestOptions options, CancellationToken cancellationToken)
+    /// <remarks>
+    /// If no <paramref name="run"/> controller is supplied, a new one is used and the keyboard is listened to for 'p', 'r', and 'q'.
+    /// A supplied controller is driven by the caller.
+    /// </remarks>
+    public async Task RunLoadTestAsync(LoadTestOptions options, CancellationToken cancellationToken, RunController? run = null)
     {
         var urls = (await urlsRetriever.GetUrlsAsync(options.SitemapUrl, options.CustomHeaders, options.UserAgent, cancellationToken))
             .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -27,13 +30,17 @@ public class LoadTester(HttpClient httpClient, UrlsRetriever urlsRetriever)
             return;
         }
 
-        Console.WriteLine("Running load test. Press Ctrl+C to stop.");
+        var ownsController = run is null;
+        run ??= new RunController();
 
-        var startTime = Stopwatch.GetTimestamp();
+        await using var keyListener = ownsController ? KeyListener.Start(run) : null;
+
+        Console.WriteLine($"Running load test. {KeyListener.GetHint(keyListener)}");
+        var startTime = run.GetTimestamp();
 
         var tasks = Enumerable
             .Range(0, options.ThreadCount)
-            .Select(i => StartThreadAsync(i, urls, startTime, options, httpClient, cancellationToken))
+            .Select(i => StartThreadAsync(i, urls, startTime, options, httpClient, run, cancellationToken))
             .ToArray();
 
         var metricCollection = await Task.WhenAll(tasks);
@@ -51,16 +58,25 @@ public class LoadTester(HttpClient httpClient, UrlsRetriever urlsRetriever)
         {
             Console.WriteLine("Cancelled.");
         }
+        else if (run.IsQuitRequested)
+        {
+            Console.WriteLine("Stopped.");
+        }
         else
         {
             Console.WriteLine("Finished.");
         }
 
-        var elapsedTime = Stopwatch.GetElapsedTime(startTime);
+        var elapsedTime = run.GetActiveElapsed(startTime);
         var seconds = elapsedTime.TotalMilliseconds / 1000;
         var safeSeconds = seconds < 1 ? 1 : seconds;
 
         Console.WriteLine($"{metrics.RequestCount} pages in {elapsedTime} = {metrics.RequestCount / safeSeconds:F2} PPS");
+
+        if (run.PausedTime > TimeSpan.Zero)
+        {
+            Console.WriteLine($"Time spent paused ({run.PausedTime}) is not counted.");
+        }
 
         var missedPercent = (double)metrics.MissedRequestCount / metrics.RequestCount * 100;
         Console.WriteLine($"{metrics.MissedRequestCount} unintended missed requests = {missedPercent:F2}%");
@@ -75,7 +91,7 @@ public class LoadTester(HttpClient httpClient, UrlsRetriever urlsRetriever)
     }
 
     private static async Task<LoadTestThreadMetrics> StartThreadAsync(int threadNumber, string[] urls, long startTime,
-        LoadTestOptions options, HttpClient httpClient, CancellationToken cancellationToken)
+        LoadTestOptions options, HttpClient httpClient, RunController run, CancellationToken cancellationToken)
     {
         (var initialUrlIndex, var stopUrlIndex) = ThreadHelpers.GetBlockStartAndEnd(threadNumber, options.ThreadCount, urls.Length);
 
@@ -145,6 +161,12 @@ public class LoadTester(HttpClient httpClient, UrlsRetriever urlsRetriever)
         {
             while (true)
             {
+                // Hold here while paused. In-flight requests from the previous iteration have already finished.
+                if (!await run.WaitToContinueAsync(cancellationToken))
+                {
+                    break;
+                }
+
                 var url = urls[urlIndex];
 
                 var shouldForce404 = options.ChanceOf404 >= 100 || (options.ChanceOf404 > 0
@@ -208,7 +230,7 @@ public class LoadTester(HttpClient httpClient, UrlsRetriever urlsRetriever)
                         break;
                     }
                 }
-                else if (Stopwatch.GetElapsedTime(startTime).TotalMilliseconds >= options.SecondsToRun * 1000)
+                else if (run.GetActiveElapsed(startTime).TotalMilliseconds >= options.SecondsToRun * 1000)
                 {
                     // Stop because time limit.
                     break;

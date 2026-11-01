@@ -1,10 +1,12 @@
 ﻿using Cocona;
 using Cocona.Application;
+using LoadTest.Helpers;
 using LoadTest.Models;
 using LoadTest.Services;
 
 namespace LoadTest;
 
+[CommandTitle]
 public class LoadTestCommands(ICoconaAppContextAccessor contextAccessor)
 {
     public CancellationToken CancellationToken => contextAccessor?.Current?.CancellationToken ?? CancellationToken.None;
@@ -16,13 +18,13 @@ public class LoadTestCommands(ICoconaAppContextAccessor contextAccessor)
             options.PrimaryDomain, options.PrimaryDomainEquivalents, CancellationToken);
     }
 
-    [Command("load", Description = "Run a load test on a given set of URLs. Does not spider.")]
+    [Command("load", Description = "Run a load test on a given set of URLs. Does not spider. While running, press p to pause, r to resume, or q to stop early and show results.")]
     public async Task RunAsync(LoadTestOptions options, [FromService] LoadTester loadTester)
     {
         await loadTester.RunLoadTestAsync(options, CancellationToken);
     }
 
-    [Command("archive", Description = "Save the HTML of pages.")]
+    [Command("archive", Description = "Save the HTML of pages. While running, press p to pause, r to resume, or q to stop early and save results.")]
     public async Task ArchivePagesAsync(PageArchiveOptions options, [FromService] PageArchiver pageArchiver)
     {
         await pageArchiver.ArchiveHtmlAsync(options, CancellationToken);

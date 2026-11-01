@@ -1,6 +1,5 @@
 ﻿using LoadTest.Helpers;
 using LoadTest.Models;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using VoidCore.Model.Text;
 
@@ -12,7 +11,11 @@ public class PageArchiver(UrlsRetriever urlsRetriever, HtmlContentRetriever html
     /// <summary>
     /// Saves a copy of the page HTML.
     /// </summary>
-    public async Task ArchiveHtmlAsync(PageArchiveOptions options, CancellationToken cancellationToken)
+    /// <remarks>
+    /// If no <paramref name="run"/> controller is supplied, a new one is used and the keyboard is listened to for 'p', 'r', and 'q'.
+    /// A supplied controller is driven by the caller.
+    /// </remarks>
+    public async Task ArchiveHtmlAsync(PageArchiveOptions options, CancellationToken cancellationToken, RunController? run = null)
     {
         var csvFilePath = $"{options.OutputPath.TrimEnd('/')}/{DateTime.Now:yyyyMMdd_HHmmss}_{nameof(PageArchiver)}.csv";
 
@@ -30,9 +33,13 @@ public class PageArchiver(UrlsRetriever urlsRetriever, HtmlContentRetriever html
             return;
         }
 
-        Console.WriteLine("Performing HTML archive. Press Ctrl+C to stop.");
+        var ownsController = run is null;
+        run ??= new RunController();
 
-        var startTime = Stopwatch.GetTimestamp();
+        await using var keyListener = ownsController ? KeyListener.Start(run) : null;
+
+        Console.WriteLine($"Performing HTML archive. {KeyListener.GetHint(keyListener)}");
+        var startTime = run.GetTimestamp();
 
         var jobResult = new PageArchiveResult();
         var spiderLinksCount = 0;
@@ -48,7 +55,7 @@ public class PageArchiver(UrlsRetriever urlsRetriever, HtmlContentRetriever html
 
                 var tasks = Enumerable
                     .Range(0, options.ThreadCount)
-                    .Select(i => StartThreadAsync(i, uris, options, htmlContentRetriever, isSpiderPass, cancellationToken))
+                    .Select(i => StartThreadAsync(i, uris, options, htmlContentRetriever, isSpiderPass, run, cancellationToken))
                     .ToArray();
 
                 var passResult = (await Task.WhenAll(tasks)).Combine();
@@ -68,7 +75,7 @@ public class PageArchiver(UrlsRetriever urlsRetriever, HtmlContentRetriever html
                 uris = newSpiderLinks;
                 spiderLinksCount += newSpiderLinks.Length;
 
-            } while (uris.Length > 0 && !cancellationToken.IsCancellationRequested);
+            } while (uris.Length > 0 && !cancellationToken.IsCancellationRequested && !run.IsQuitRequested);
         }
         catch (OperationCanceledException)
         {
@@ -79,16 +86,25 @@ public class PageArchiver(UrlsRetriever urlsRetriever, HtmlContentRetriever html
         {
             Console.WriteLine("Cancelled.");
         }
+        else if (run.IsQuitRequested)
+        {
+            Console.WriteLine("Stopped.");
+        }
         else
         {
             Console.WriteLine("Finished.");
         }
 
-        var elapsedTime = Stopwatch.GetElapsedTime(startTime);
+        var elapsedTime = run.GetActiveElapsed(startTime);
         var seconds = elapsedTime.TotalMilliseconds / 1000;
         var safeSeconds = seconds < 1 ? 1 : seconds;
 
         Console.WriteLine($"{jobResult.RequestCount} pages in {elapsedTime} = {jobResult.RequestCount / safeSeconds:F2} PPS");
+
+        if (run.PausedTime > TimeSpan.Zero)
+        {
+            Console.WriteLine($"Time spent paused ({run.PausedTime}) is not counted.");
+        }
 
         if (options.IsSpiderEnabled)
         {
@@ -107,7 +123,7 @@ public class PageArchiver(UrlsRetriever urlsRetriever, HtmlContentRetriever html
         await FileHelper.SaveResultsCsvAsync(csvFilePath, jobResult);
     }
 
-    private static async Task<PageArchiveResult> StartThreadAsync(int threadNumber, Uri[] urls, PageArchiveOptions options, HtmlContentRetriever client, bool isSpiderPass, CancellationToken cancellationToken)
+    private static async Task<PageArchiveResult> StartThreadAsync(int threadNumber, Uri[] urls, PageArchiveOptions options, HtmlContentRetriever client, bool isSpiderPass, RunController run, CancellationToken cancellationToken)
     {
         (var initialUrlIndex, var stopUrlIndex) = ThreadHelpers.GetBlockStartAndEnd(threadNumber, options.ThreadCount, urls.Length);
 
@@ -122,6 +138,19 @@ public class PageArchiver(UrlsRetriever urlsRetriever, HtmlContentRetriever html
 
         while (!cancellationToken.IsCancellationRequested)
         {
+            try
+            {
+                // Hold here while paused. Pages already being processed have finished.
+                if (!await run.WaitToContinueAsync(cancellationToken))
+                {
+                    break;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+
             var uri = urls[urlIndex] ?? throw new InvalidOperationException($"URL at index {urlIndex} is null.");
 
             var pageResult = await ProcessPageAsync(options, client, uri, isSpiderPass, cancellationToken);
