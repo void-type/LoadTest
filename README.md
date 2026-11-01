@@ -69,6 +69,17 @@ vt-loadtest archive --path 'https://example.com/sitemap.xml' --output './archive
 
 See `vt-loadtest -h` for more.
 
+### Pausing, resuming, and stopping
+
+While `load` or `archive` is running in an interactive terminal:
+
+- `p` pauses. Each thread finishes the page it's on (including its resources), then waits.
+- `r` resumes.
+- `q` stops early and shows the results. `archive` still writes its CSV.
+- `Ctrl+C` cancels immediately, including while paused.
+
+Time spent paused doesn't count toward `--seconds` or the pages-per-second figure. The keys are ignored when input is redirected, such as in CI or a pipe.
+
 ## Known issues
 
 URLs are technically case-sensitive, but some file systems aren't (Windows). This means when archiving pages, you may only get one page or the other in the event that the web server treats them as 2 different URLs. This should be rare as nearly identical URLs are bad for SEO.

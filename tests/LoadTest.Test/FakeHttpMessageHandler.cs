@@ -8,11 +8,33 @@ using System.Net;
 public sealed class FakeHttpMessageHandler : HttpMessageHandler
 {
     private readonly Dictionary<string, Func<HttpResponseMessage>> _responses = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<RecordedRequest> _requests = [];
+    private readonly Lock _lock = new();
 
-    public List<RecordedRequest> Requests { get; } = [];
+    /// <summary>
+    /// A snapshot of the requests received so far.
+    /// </summary>
+    public List<RecordedRequest> Requests
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return [.. _requests];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Called for each request as it arrives, before the response is returned.
+    /// </summary>
+    public Action<RecordedRequest> OnRequest { get; set; }
 
     public FakeHttpMessageHandler Add(string url, string content) =>
         Add(url, () => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(content) });
+
+    public FakeHttpMessageHandler AddHtml(string url, string html) =>
+        Add(url, () => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(html, System.Text.Encoding.UTF8, "text/html") });
 
     public FakeHttpMessageHandler Add(string url, byte[] content) =>
         Add(url, () => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(content) });
@@ -32,9 +54,16 @@ public sealed class FakeHttpMessageHandler : HttpMessageHandler
     {
         var url = request.RequestUri!.ToString();
 
-        Requests.Add(new RecordedRequest(
+        var recorded = new RecordedRequest(
             url,
-            request.Headers.ToDictionary(x => x.Key, x => string.Join(",", x.Value), StringComparer.OrdinalIgnoreCase)));
+            request.Headers.ToDictionary(x => x.Key, x => string.Join(",", x.Value), StringComparer.OrdinalIgnoreCase));
+
+        lock (_lock)
+        {
+            _requests.Add(recorded);
+        }
+
+        OnRequest?.Invoke(recorded);
 
         return Task.FromResult(_responses.TryGetValue(url, out var response)
             ? response()
