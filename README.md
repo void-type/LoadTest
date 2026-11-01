@@ -6,7 +6,7 @@
 
 [LoadTest](https://github.com/void-type/loadtest) is a simple website utility packaged in a .NET tool. It's not fully-featured and is just a toy/tool for myself, but feel free to use it.
 
-- Load test a site using a list of URLs or point to the sitemap, a gzipped sitemap, or just the root domain (sitemaps are found in robots.txt).
+- Load test a site using a list of URLs or point to the sitemap, a gzipped sitemap, or just the root domain (sitemaps are found in robots.txt, or at /sitemap.xml).
 - Save a list of URLs from the sitemap.
 - Archive html from pages.
   - Save html source or use --browser to save the JS-rendered page markup.
@@ -50,7 +50,7 @@ vt-loadtest load --path 'https://developers.google.com/tasks/sitemap.xml' --thre
 # Load test using a remote sitemap index for 30 seconds and limit the rate of requests.
 vt-loadtest load --path 'https://developers.google.com/sitemap.xml' --seconds 30 --delay
 
-# Give only the root domain. Sitemaps are read from https://example.com/robots.txt. Gzipped sitemaps (.xml.gz) work too.
+# Give only the root domain. Sitemaps are read from https://example.com/robots.txt, or https://example.com/sitemap.xml if none are listed. Gzipped sitemaps (.xml.gz) work too.
 vt-loadtest load --path 'https://example.com'
 
 # Use a local list of URLs rather than a sitemap. Force at least 20% chance of 404.

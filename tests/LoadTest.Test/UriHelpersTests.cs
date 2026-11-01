@@ -34,13 +34,44 @@ public class UriHelpersTests
     }
 
     [Theory]
+    // Default ports are removed
+    [InlineData("https://example.com:443/page", "https://example.com/page")]
+    [InlineData("http://example.com:80/page", "https://example.com/page")]
+    // Custom ports are kept
+    [InlineData("https://example.com:8080/page", "https://example.com:8080/page")]
+    // Surrounding whitespace is trimmed
+    [InlineData("  https://example.com/page  ", "https://example.com/page")]
+    // Leading tilde is dropped
+    [InlineData("~/page", "https://example.com/page")]
+    public void GetNormalizedUri_ports_whitespace_and_tilde(string url, string expectedNormalizedUrl)
+    {
+        Assert.Equal(expectedNormalizedUrl, url.GetNormalizedUri("example.com", [], null)?.ToString());
+    }
+
+    [Theory]
+    [InlineData("   ")]
+    [InlineData("https://exa mple.com/")]
+    [InlineData("https://")]
+    [InlineData("http://")]
+    public void GetNormalizedUri_returns_null_for_unparseable_urls(string url)
+    {
+        Assert.Null(url.GetNormalizedUri("example.com", [], null, quiet: true));
+    }
+
+    [Fact]
+    public void GetNormalizedUri_relative_url_with_invalid_foundAt_returns_null()
+    {
+        Assert.Null("/page".GetNormalizedUri("example.com", [], "not a url", quiet: true));
+    }
+
+    [Theory]
     [InlineData("example.com", "https://example.com/TEST/TEST/", "https://example.com/test/test")]
     [InlineData("example.com", "https://exam.ple/TEST/TEST/", "https://example.com/test/test")]
     [InlineData("example.com", "https://www.example.com/TEST/TEST/", "https://example.com/test/test")]
     [InlineData("example.com", "http://www.example.com", "https://example.com/")]
     [InlineData("example.com", "//www.example.com", "https://example.com/")]
     [InlineData("example.com", "/", "https://example.com/")]
-    public void GetNormalizedUri_primary_domain_equivalents_1(string primaryDomain, string url, string expectedNormalizedUrl)
+    public void GetNormalizedUri_bare_primary_domain_with_equivalents(string primaryDomain, string url, string expectedNormalizedUrl)
     {
         var equivalents = new string[] { "www.example.com", "exam.ple" };
 
@@ -55,7 +86,7 @@ public class UriHelpersTests
     [InlineData("www.example.com", "//example.com", "https://www.example.com/")]
     [InlineData("www.example.com", "/", "https://www.example.com/")]
     [InlineData("www.example.com", "notexample.com", "https://notexample.com/")]
-    public void GetNormalizedUri_primary_domain_equivalents_2(string primaryDomain, string url, string expectedNormalizedUrl)
+    public void GetNormalizedUri_www_primary_domain_with_equivalents(string primaryDomain, string url, string expectedNormalizedUrl)
     {
         var equivalents = new string[] { "example.com", "exam.ple" };
 

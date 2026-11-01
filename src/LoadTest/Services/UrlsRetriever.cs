@@ -66,7 +66,8 @@ public class UrlsRetriever(HttpClient httpClient)
     }
 
     /// <summary>
-    /// If the path is a root domain, finds sitemap URLs in its robots.txt. Returns null if the path isn't a root domain.
+    /// If the path is a root domain, finds sitemap URLs in its robots.txt, falling back to /sitemap.xml
+    /// if robots.txt is missing or lists none. Returns null if the path isn't a root domain.
     /// </summary>
     private async Task<string[]?> GetSitemapUrlsFromRobotsAsync(string path, List<string>? customHeaders, string? userAgent, CancellationToken cancellationToken)
     {
@@ -77,6 +78,8 @@ public class UrlsRetriever(HttpClient httpClient)
             return null;
         }
 
+        var defaultSitemapUrl = new Uri(robotsUri, "/sitemap.xml").ToString();
+
         Console.WriteLine($"Looking for sitemaps in {robotsUri}.");
 
         try
@@ -86,16 +89,18 @@ public class UrlsRetriever(HttpClient httpClient)
 
             if (sitemapUrls.Length == 0)
             {
-                Console.WriteLine($"No sitemaps found in {robotsUri}.");
+                Console.WriteLine($"No sitemaps found in {robotsUri}. Trying {defaultSitemapUrl}.");
+
+                return [defaultSitemapUrl];
             }
 
             return sitemapUrls;
         }
         catch (HttpRequestException ex)
         {
-            Console.WriteLine($"Error retrieving robots.txt at {robotsUri} (Status Code: {ex.StatusCode}).");
+            Console.WriteLine($"Error retrieving robots.txt at {robotsUri} (Status Code: {ex.StatusCode}). Trying {defaultSitemapUrl}.");
 
-            return [];
+            return [defaultSitemapUrl];
         }
     }
 

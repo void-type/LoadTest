@@ -147,7 +147,7 @@ public static class HtmlScanner
             {
                 var href = element.GetAttribute("href");
 
-                if (string.IsNullOrWhiteSpace(href))
+                if (string.IsNullOrWhiteSpace(href) || HasNonHttpScheme(href))
                 {
                     continue;
                 }
@@ -165,7 +165,7 @@ public static class HtmlScanner
                     continue;
                 }
 
-                // Ignore other schemes like mailto
+                // Ignore other schemes
                 if (hrefUri.Scheme != "http" && hrefUri.Scheme != "https")
                 {
                     continue;
@@ -177,5 +177,15 @@ public static class HtmlScanner
         }
 
         return spiderLinks;
+    }
+
+    // GetNormalizedUri forces https, so a link like mailto:a@example.com would otherwise be read as user info on a local host.
+    private static readonly string[] NonHttpSchemes = ["mailto:", "tel:", "sms:", "javascript:", "data:", "ftp:", "file:", "blob:"];
+
+    private static bool HasNonHttpScheme(string href)
+    {
+        var trimmed = href.TrimStart();
+
+        return NonHttpSchemes.Any(scheme => trimmed.StartsWith(scheme, StringComparison.OrdinalIgnoreCase));
     }
 }

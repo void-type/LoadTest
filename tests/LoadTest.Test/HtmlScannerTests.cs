@@ -1,6 +1,7 @@
 ﻿namespace LoadTest.Test;
 
 using LoadTest.Helpers;
+using LoadTest.Models;
 
 public class HtmlScannerTests
 {
@@ -97,5 +98,141 @@ public class HtmlScannerTests
         var links = await HtmlScanner.FindResourceLinksAsync(PageUri, html, ["cdn.example.com"], CancellationToken.None);
 
         Assert.Equal([new Uri("https://cdn.example.com/logo.png")], links);
+    }
+
+    private static PageArchiveOptions Options(
+        string include = null,
+        string exclude = null,
+        List<string> terms = null,
+        bool spider = false) => new()
+        {
+            PrimaryDomain = "example.com",
+            PrimaryDomainEquivalents = ["www.example.com"],
+            ContentIncludeSelector = include,
+            ContentExcludeSelector = exclude,
+            ContentSearchTerms = terms,
+            IsSpiderEnabled = spider,
+        };
+
+    [Fact]
+    public async Task ScanAsync_finds_search_terms_in_html_and_text()
+    {
+        var html = "<body><p>Hello <b>World</b></p><div class=\"promo\">secret</div></body>";
+
+        var result = await HtmlScanner.ScanAsync(Options(terms: ["world", "<b>", "missing"]), PageUri.ToString(), html, CancellationToken.None);
+
+        Assert.False(result.IsScanError);
+        // "<b>" is only in the markup, "world" is in both
+        Assert.Equal(["world", "<b>"], result.SearchTermsFoundInHtml);
+        Assert.Equal(["world"], result.SearchTermsFoundInText);
+    }
+
+    [Fact]
+    public async Task ScanAsync_without_search_terms_finds_nothing()
+    {
+        var result = await HtmlScanner.ScanAsync(Options(), PageUri.ToString(), "<body>text</body>", CancellationToken.None);
+
+        Assert.False(result.IsScanError);
+        Assert.Empty(result.SearchTermsFoundInHtml);
+        Assert.Empty(result.SearchTermsFoundInText);
+    }
+
+    [Fact]
+    public async Task ScanAsync_only_searches_include_selector()
+    {
+        var html = "<body><nav>menu</nav><main>content</main></body>";
+
+        var result = await HtmlScanner.ScanAsync(Options(include: "main", terms: ["menu", "content"]), PageUri.ToString(), html, CancellationToken.None);
+
+        Assert.Equal(["content"], result.SearchTermsFoundInText);
+    }
+
+    [Fact]
+    public async Task ScanAsync_ignores_excluded_elements()
+    {
+        var html = "<body><main><p>content</p><aside class=\"ad\">sponsored</aside></main></body>";
+
+        var result = await HtmlScanner.ScanAsync(Options(include: "main", exclude: ".ad", terms: ["content", "sponsored"]), PageUri.ToString(), html, CancellationToken.None);
+
+        Assert.Equal(["content"], result.SearchTermsFoundInText);
+        Assert.Equal(["content"], result.SearchTermsFoundInHtml);
+    }
+
+    [Fact]
+    public async Task ScanAsync_exclude_selector_without_include_applies_to_body()
+    {
+        var html = "<body><p>content</p><footer>legal</footer></body>";
+
+        var result = await HtmlScanner.ScanAsync(Options(exclude: "footer", terms: ["content", "legal"]), PageUri.ToString(), html, CancellationToken.None);
+
+        Assert.Equal(["content"], result.SearchTermsFoundInText);
+    }
+
+    [Fact]
+    public async Task ScanAsync_reports_error_when_include_selector_matches_nothing()
+    {
+        var result = await HtmlScanner.ScanAsync(Options(include: "#nope", terms: ["x"]), PageUri.ToString(), "<body>x</body>", CancellationToken.None);
+
+        Assert.True(result.IsScanError);
+        Assert.Empty(result.SearchTermsFoundInText);
+    }
+
+    [Fact]
+    public async Task ScanAsync_reports_error_when_cancelled()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var result = await HtmlScanner.ScanAsync(Options(), PageUri.ToString(), "<body>x</body>", cts.Token);
+
+        Assert.True(result.IsScanError);
+    }
+
+    [Fact]
+    public async Task ScanAsync_finds_spider_links_only_when_enabled()
+    {
+        var html = "<body><a href=\"/about\">About</a></body>";
+
+        var disabled = await HtmlScanner.ScanAsync(Options(spider: false), PageUri.ToString(), html, CancellationToken.None);
+        var enabled = await HtmlScanner.ScanAsync(Options(spider: true), PageUri.ToString(), html, CancellationToken.None);
+
+        Assert.Empty(disabled.SpiderLinks);
+        Assert.Equal([new Uri("https://example.com/about")], enabled.SpiderLinks);
+    }
+
+    [Fact]
+    public async Task ScanAsync_spider_links_are_local_normalized_http_links()
+    {
+        var html = """
+            <body>
+                <a href="/Relative/Page/">relative</a>
+                <a href="https://example.com/absolute?q=1#frag">absolute</a>
+                <a href="http://www.example.com/equivalent">equivalent domain</a>
+                <a href="https://other.com/external">external</a>
+                <a href="mailto:someone@example.com">mail</a>
+                <a href="">empty</a>
+                <a>no href</a>
+            </body>
+            """;
+
+        var result = await HtmlScanner.ScanAsync(Options(spider: true), PageUri.ToString(), html, CancellationToken.None);
+
+        Assert.Equal(
+            [
+                new Uri("https://example.com/relative/page"),
+                new Uri("https://example.com/absolute"),
+                new Uri("https://example.com/equivalent"),
+            ],
+            result.SpiderLinks);
+    }
+
+    [Fact]
+    public async Task ScanAsync_spider_links_are_not_limited_by_include_selector()
+    {
+        var html = "<body><nav><a href=\"/nav-page\">nav</a></nav><main>content</main></body>";
+
+        var result = await HtmlScanner.ScanAsync(Options(include: "main", spider: true), PageUri.ToString(), html, CancellationToken.None);
+
+        Assert.Equal([new Uri("https://example.com/nav-page")], result.SpiderLinks);
     }
 }

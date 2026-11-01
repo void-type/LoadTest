@@ -45,6 +45,21 @@ public class SitemapHelpersTests
     }
 
     [Fact]
+    public async Task DecodeSitemapAsync_reads_empty_content()
+    {
+        Assert.Equal(string.Empty, await SitemapHelpers.DecodeSitemapAsync([], CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task DecodeSitemapAsync_throws_on_corrupt_gzip_content()
+    {
+        // Gzip magic bytes followed by garbage
+        byte[] corrupt = [0x1f, 0x8b, 0x00, 0x01, 0x02, 0x03];
+
+        await Assert.ThrowsAnyAsync<Exception>(() => SitemapHelpers.DecodeSitemapAsync(corrupt, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task DecodeSitemapAsync_decompresses_gzip_content()
     {
         using var output = new MemoryStream();
